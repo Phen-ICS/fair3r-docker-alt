@@ -123,70 +123,68 @@ else
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} db init"
 fi
 
-ADMIN_USER="admin"
-echo "Ensuring admin user '${ADMIN_USER}' exists and password matches .env..."
+echo "Ensuring admin user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' exists and password matches .env..."
 admin_exists="$(
   PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
     -h "${CKAN_DB_HOST}" \
     -p "${CKAN_DB_PORT}" \
     -U "${CKAN_DB_USER}" \
     -d "${CKAN_DB_NAME}" \
-    -tAc "SELECT 1 FROM \"user\" WHERE name='${ADMIN_USER}' LIMIT 1;" \
+    -tAc "SELECT 1 FROM \"user\" WHERE name='${CKAN_BOOTSTRAP_SYSADMIN_NAME}' LIMIT 1;" \
     | tr -d '[:space:]'
 )"
 if [ "${admin_exists}" = "1" ]; then
   su -s /bin/bash ckan -c \
-    "ckan -c ${CKAN_INI} user setpass ${ADMIN_USER} -p ${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
+    "ckan -c ${CKAN_INI} user setpass ${CKAN_BOOTSTRAP_SYSADMIN_NAME} -p ${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
     >/dev/null
 else
   su -s /bin/bash ckan -c \
-    "ckan -c ${CKAN_INI} user add ${ADMIN_USER} email=${CKAN_BOOTSTRAP_SYSADMIN_EMAIL} password=${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
+    "ckan -c ${CKAN_INI} user add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} email=${CKAN_BOOTSTRAP_SYSADMIN_EMAIL} password=${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
     >/dev/null
 fi
 
-if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${ADMIN_USER}" >/dev/null 2>&1; then
-  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${ADMIN_USER}" | grep -qi "sysadmin"; then
-    echo "WARNING: User '${ADMIN_USER}' is not sysadmin and cannot be promoted automatically."
+if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" >/dev/null 2>&1; then
+  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" | grep -qi "sysadmin"; then
+    echo "WARNING: User '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' is not sysadmin and cannot be promoted automatically."
     echo "         Skipping xloader token creation."
   fi
 fi
 
-echo "Ensuring xloader API token '${CKAN_XLOADER_TOKEN_NAME}' exists for user '${ADMIN_USER}'..."
-existing_xloader_token_id="$(
-  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token list ${ADMIN_USER}" \
+echo "Rotating xloader API token '${CKAN_XLOADER_TOKEN_NAME}' for user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'..."
+existing_xloader_token_ids="$(
+  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token list ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" \
     | awk -v token_name="${CKAN_XLOADER_TOKEN_NAME}" '
         match($0, /^\t?\[([^]]+)\] (.*) - /, m) {
           if (m[2] == token_name) {
             print m[1]
-            exit
           }
         }'
 )"
 
-if [ -z "${existing_xloader_token_id}" ]; then
-  CKAN_XLOADER_API_TOKEN="$(
-    su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${ADMIN_USER} ${CKAN_XLOADER_TOKEN_NAME} -q" \
-      | tr -d '\r\n'
-  )"
-  if [ -n "${CKAN_XLOADER_API_TOKEN}" ]; then
-    printf "%s" "${CKAN_XLOADER_API_TOKEN}" > "${XLOADER_TOKEN_FILE}"
-    chown ckan:ckan "${XLOADER_TOKEN_FILE}"
-    chmod 600 "${XLOADER_TOKEN_FILE}"
-  fi
+if [ -n "${existing_xloader_token_ids}" ]; then
+  while IFS= read -r token_id; do
+    [ -n "${token_id}" ] || continue
+    su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token revoke ${token_id}" >/dev/null
+  done <<< "${existing_xloader_token_ids}"
 fi
 
-if [[ "${CKAN_XLOADER_API_TOKEN:-}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+CKAN_XLOADER_API_TOKEN="$(
+  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} ${CKAN_XLOADER_TOKEN_NAME} -q" \
+    | awk '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/ { token=$0 } END { if (token) print token }'
+)"
+
+if [[ "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+  printf "%s" "${CKAN_XLOADER_API_TOKEN}" > "${XLOADER_TOKEN_FILE}"
+  chown ckan:ckan "${XLOADER_TOKEN_FILE}"
+  chmod 600 "${XLOADER_TOKEN_FILE}"
+
   if grep -q "^ckanext.xloader.api_token = " "${CKAN_INI}"; then
     sed -i "s|^ckanext.xloader.api_token = .*|ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}|" "${CKAN_INI}"
   else
     printf "\nckanext.xloader.api_token = %s\n" "${CKAN_XLOADER_API_TOKEN}" >> "${CKAN_INI}"
   fi
-elif [ -n "${existing_xloader_token_id}" ]; then
-  echo "WARNING: xloader token '${CKAN_XLOADER_TOKEN_NAME}' already exists for '${ADMIN_USER}',"
-  echo "         but CKAN_XLOADER_API_TOKEN is empty so /srv/app/ckan.ini cannot be updated."
-  echo "         Remove old token manually once, then restart to create and persist a new one."
 else
-  echo "WARNING: Failed to create a valid xloader token for '${ADMIN_USER}'."
+  echo "WARNING: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
 fi
 
 echo "Starting CKAN web and xloader worker via supervisord..."

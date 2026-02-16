@@ -24,6 +24,9 @@ ckan.datastore.read_url = postgresql://${CKAN_DATASTORE_READONLY_USER}:${CKAN_DA
 ckanext.xloader.jobs_db.uri = ${CKAN_XLOADER_JOBS_DB_URI}
 ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}
 ckanext.xloader.site_url = ${CKAN_SITE_URL}
+ckanext.xloader.formats = csv application/csv
+
+ckan.views.default_views = image_view datatables_view text_view
 
 [server:main]
 use = egg:waitress#main
