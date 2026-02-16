@@ -1,0 +1,65 @@
+[DEFAULT]
+debug = false
+
+[app:main]
+use = egg:ckan
+
+ckan.plugins = stats text_view image_view datatables_view recline_view datastore xloader ${CKAN_EXTRA_PLUGINS}
+
+sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
+solr_url = ${CKAN_SOLR_URL}
+ckan.redis.url = ${CKAN_REDIS_URL}
+
+ckan.site_url = ${CKAN_SITE_URL}
+ckan.site_id = default
+ckan.storage_path = /var/lib/ckan/storage
+
+beaker.session.key = ckan
+beaker.session.secret = ${CKAN_SESSION_SECRET}
+app_instance_uuid = ${CKAN_APP_INSTANCE_UUID}
+
+ckan.datastore.write_url = postgresql://${CKAN_DATASTORE_DB_USER}:${CKAN_DATASTORE_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DATASTORE_DB_NAME}
+ckan.datastore.read_url = postgresql://${CKAN_DATASTORE_READONLY_USER}:${CKAN_DATASTORE_READONLY_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DATASTORE_DB_NAME}
+
+ckanext.xloader.jobs_db.uri = ${CKAN_XLOADER_JOBS_DB_URI}
+ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}
+ckanext.xloader.site_url = ${CKAN_SITE_URL}
+
+[server:main]
+use = egg:waitress#main
+host = 0.0.0.0
+port = 5000
+
+[loggers]
+keys = root, ckan, werkzeug
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = INFO
+handlers = console
+
+[logger_ckan]
+level = INFO
+handlers = console
+qualname = ckan
+propagate = 0
+
+[logger_werkzeug]
+level = INFO
+handlers = console
+qualname = werkzeug
+propagate = 0
+
+[handler_console]
+class = StreamHandler
+args = (sys.stdout,)
+level = INFO
+formatter = generic
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s] %(message)s
