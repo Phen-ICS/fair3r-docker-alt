@@ -23,12 +23,6 @@ wait_for_service "${CKAN_DB_HOST}" "${CKAN_DB_PORT}" "PostgreSQL"
 wait_for_service "solr" "8983" "Solr"
 wait_for_service "redis" "6379" "Redis"
 
-XLOADER_TOKEN_FILE="/var/lib/ckan/xloader_api_token"
-if [ -z "${CKAN_XLOADER_API_TOKEN:-}" ] && [ -f "${XLOADER_TOKEN_FILE}" ]; then
-  CKAN_XLOADER_API_TOKEN="$(tr -d '\r\n' < "${XLOADER_TOKEN_FILE}")"
-  export CKAN_XLOADER_API_TOKEN
-fi
-
 echo "Rendering CKAN config from template..."
 envsubst < "${CKAN_INI_TEMPLATE}" > "${CKAN_INI}"
 
@@ -174,17 +168,14 @@ CKAN_XLOADER_API_TOKEN="$(
 )"
 
 if [[ "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
-  printf "%s" "${CKAN_XLOADER_API_TOKEN}" > "${XLOADER_TOKEN_FILE}"
-  chown ckan:ckan "${XLOADER_TOKEN_FILE}"
-  chmod 600 "${XLOADER_TOKEN_FILE}"
-
   if grep -q "^ckanext.xloader.api_token = " "${CKAN_INI}"; then
     sed -i "s|^ckanext.xloader.api_token = .*|ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}|" "${CKAN_INI}"
   else
     printf "\nckanext.xloader.api_token = %s\n" "${CKAN_XLOADER_API_TOKEN}" >> "${CKAN_INI}"
   fi
 else
-  echo "WARNING: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
+  echo "ERROR: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
+  exit 1
 fi
 
 echo "Starting CKAN web and xloader worker via supervisord..."
