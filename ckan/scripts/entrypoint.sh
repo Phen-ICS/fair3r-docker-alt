@@ -187,5 +187,34 @@ else
   echo "WARNING: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
 fi
 
+echo "=== Set Fair3R Configuration ==="
+[ -n "$FAIR3R_CONTEXT" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.context = ${FAIR3R_CONTEXT}"
+[ -n "$FAIR3R_FCO_URL" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.fco_url = ${FAIR3R_FCO_URL}"
+[ -n "$FAIR3R_SHARED_SECRET" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.shared_secret = ${FAIR3R_SHARED_SECRET}"
+[ -n "$FAIR3R_ENABLE_FCO_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fco_integration = ${FAIR3R_ENABLE_FCO_INTEGRATION}"
+[ -n "$FAIR3R_ENABLE_FDF_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fdf_integration = ${FAIR3R_ENABLE_FDF_INTEGRATION}"
+
+
+echo "=== Set Contact Configuration ==="
+[ -n "$CONTACT_MAIL" ] && ckan config-tool "$CKAN_INI" "ckanext.contact.mail_to = ${CONTACT_MAIL}"
+
+echo "=== Set DOI Configuration ==="
+[ -n "$DOI_ACCOUNT_NAME" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.account_name = ${DOI_ACCOUNT_NAME}"
+[ -n "$DOI_ACCOUNT_PASSWORD" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.account_password = ${DOI_ACCOUNT_PASSWORD}"
+[ -n "$DOI_PREFIX" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.prefix = ${DOI_PREFIX}"
+[ -n "$DOI_PUBLISHER" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.publisher = ${DOI_PUBLISHER}"
+[ -n "$DOI_TEST_MODE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.test_mode = ${DOI_TEST_MODE}"
+[ -n "$DOI_SITE_TITLE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.site_title = ${DOI_SITE_TITLE}"
+
+ckan -c $CKAN_INI doi initdb
+
+echo "=== Set Pages Configuration ==="
+ckan config-tool "$CKAN_INI" "ckanext.pages.organization = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.group = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.allow_html = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
+
+ckan --config="$CKAN_INI" db upgrade -p pages
+
 echo "Starting CKAN web and xloader worker via supervisord..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/ckan-supervisord.conf
