@@ -1,5 +1,5 @@
 [DEFAULT]
-debug = false
+debug = ${CKAN_DEBUG}
 
 [app:main]
 use = egg:ckan

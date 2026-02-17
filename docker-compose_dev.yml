@@ -1,21 +1,6 @@
 services:
-  
-  nginx:
-    build:
-      context: nginx/
-      dockerfile: Dockerfile
-    networks:
-      - webnet
-      - ckannet
-    depends_on:
-      ckan:
-        condition: service_healthy
-    ports:
-      - "0.0.0.0:${NGINX_SSLPORT_HOST}:${NGINX_SSLPORT}"
   db:
     image: postgres:14
-    networks:
-      - dbnet
     container_name: ckan-db
     restart: unless-stopped
     environment:
@@ -32,8 +17,6 @@ services:
 
   solr:
     image: ckan/ckan-solr:2.10-solr9
-    networks:
-      - solrnet
     container_name: ckan-solr
     restart: unless-stopped
     volumes:
@@ -46,8 +29,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    networks:
-      - redisnet
     container_name: ckan-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -67,11 +48,7 @@ services:
         FAIR3R_EXTENSION_GIT_URL: ${FAIR3R_EXTENSION_GIT_URL}
         PAGE_EXTENSION_GIT_URL: ${PAGE_EXTENSION_GIT_URL}
         DOI_EXTENSION_GIT_URL: ${DOI_EXTENSION_GIT_URL}
-    networks:
-      - ckannet
-      - dbnet
-      - solrnet
-      - redisnet
+
     container_name: ckan-app
     restart: unless-stopped
     env_file:
@@ -83,8 +60,8 @@ services:
       CKAN_REDIS_URL: redis://redis:6379/1
       CKAN_XLOADER_JOBS_DB_URI: postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@db/${CKAN_DB_NAME}
       CKAN_EXTRA_PLUGINS: ${CKAN_EXTRA_PLUGINS}
-      FAIR3R_CONTEXT: PROD
-      CKAN_DEBUG: "false"
+      FAIR3R_CONTEXT: DEV
+      CKAN_DEBUG: "true"
     depends_on:
       db:
         condition: service_healthy
@@ -108,13 +85,3 @@ volumes:
   solr_data:
   redis_data:
   ckan_storage:
-
-networks:
-  webnet:
-  ckannet:
-  solrnet:
-    internal: true
-  dbnet:
-    internal: true
-  redisnet:
-    internal: true
