@@ -1,28 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${CKAN_INI_TEMPLATE:=/srv/app/config/ckan.ini.template}"
-: "${CKAN_INI:=/srv/app/ckan.ini}"
-: "${CKAN_DB_HOST:=db}"
-: "${CKAN_DB_PORT:=5432}"
-: "${CKAN_DB_NAME:=ckan}"
-: "${CKAN_DB_USER:=ckan}"
-: "${CKAN_DB_PASSWORD:=ckan}"
-: "${CKAN_DATASTORE_DB_NAME:=datastore}"
-: "${CKAN_DATASTORE_DB_USER:=ckan_datastore}"
-: "${CKAN_DATASTORE_DB_PASSWORD:=ckan_datastore}"
-: "${CKAN_DATASTORE_READONLY_USER:=ckan_datastore_ro}"
-: "${CKAN_DATASTORE_READONLY_PASSWORD:=ckan_datastore_ro}"
-: "${CKAN_SOLR_URL:=http://solr:8983/solr/ckan}"
-: "${CKAN_REDIS_URL:=redis://redis:6379/1}"
-: "${CKAN_SITE_URL:=http://localhost:5000}"
-: "${CKAN_XLOADER_API_TOKEN:=}"
-: "${CKAN_XLOADER_TOKEN_USER:=}"
-: "${CKAN_XLOADER_TOKEN_NAME:=xloader}"
-: "${CKAN_BOOTSTRAP_SYSADMIN_NAME:=}"
-: "${CKAN_BOOTSTRAP_SYSADMIN_EMAIL:=}"
-: "${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD:=}"
-
 wait_for_service() {
   local host="$1"
   local port="$2"
@@ -44,6 +22,12 @@ wait_for_service() {
 wait_for_service "${CKAN_DB_HOST}" "${CKAN_DB_PORT}" "PostgreSQL"
 wait_for_service "solr" "8983" "Solr"
 wait_for_service "redis" "6379" "Redis"
+
+XLOADER_TOKEN_FILE="/var/lib/ckan/xloader_api_token"
+if [ -z "${CKAN_XLOADER_API_TOKEN:-}" ] && [ -f "${XLOADER_TOKEN_FILE}" ]; then
+  CKAN_XLOADER_API_TOKEN="$(tr -d '\r\n' < "${XLOADER_TOKEN_FILE}")"
+  export CKAN_XLOADER_API_TOKEN
+fi
 
 echo "Rendering CKAN config from template..."
 envsubst < "${CKAN_INI_TEMPLATE}" > "${CKAN_INI}"
@@ -139,83 +123,98 @@ else
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} db init"
 fi
 
-if [ -n "${CKAN_BOOTSTRAP_SYSADMIN_NAME}" ]; then
-  echo "Ensuring bootstrap sysadmin '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' exists..."
-
-  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" >/dev/null 2>&1; then
-    if [ -z "${CKAN_BOOTSTRAP_SYSADMIN_EMAIL}" ] || [ -z "${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" ]; then
-      echo "WARNING: Bootstrap sysadmin user missing and CKAN_BOOTSTRAP_SYSADMIN_EMAIL/PASSWORD not provided."
-      echo "         Skipping bootstrap user creation."
-    else
-      su -s /bin/bash ckan -c \
-        "ckan -c ${CKAN_INI} user add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} email=${CKAN_BOOTSTRAP_SYSADMIN_EMAIL} password=${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
-        >/dev/null
-    fi
-  fi
-
-  # Keep this non-fatal to avoid restart loops.
-  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" >/dev/null 2>&1 || true
-fi
-
-if [ -n "${CKAN_XLOADER_TOKEN_USER}" ]; then
-  echo "Rotating xloader API token '${CKAN_XLOADER_TOKEN_NAME}' for user '${CKAN_XLOADER_TOKEN_USER}'..."
-  can_rotate_token=true
-
-  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_XLOADER_TOKEN_USER}" >/dev/null 2>&1; then
-    echo "WARNING: User '${CKAN_XLOADER_TOKEN_USER}' not found. Skipping xloader token rotation and keeping current CKAN_XLOADER_API_TOKEN."
-    can_rotate_token=false
-  fi
-
-  if [ "${can_rotate_token}" = true ]; then
-    echo "Ensuring '${CKAN_XLOADER_TOKEN_USER}' is sysadmin..."
-    if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_XLOADER_TOKEN_USER}" >/dev/null 2>&1; then
-      # If already sysadmin, CKAN may return non-zero in some setups.
-      # Confirm role explicitly to avoid using a token with insufficient permissions.
-      if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_XLOADER_TOKEN_USER}" | grep -qi "sysadmin"; then
-        echo "WARNING: User '${CKAN_XLOADER_TOKEN_USER}' is not sysadmin and cannot be promoted automatically."
-        echo "         Skipping xloader token rotation and keeping current CKAN_XLOADER_API_TOKEN."
-        can_rotate_token=false
-      fi
-    fi
-  fi
-
-  if [ "${can_rotate_token}" = true ]; then
-    existing_token_ids="$(
-      su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token list ${CKAN_XLOADER_TOKEN_USER}" \
-        | awk -v token_name="${CKAN_XLOADER_TOKEN_NAME}" '
-            match($0, /^\t?\[([^]]+)\] (.*) - /, m) {
-              if (m[2] == token_name) {
-                print m[1]
-              }
-            }'
-    )"
-
-    if [ -n "${existing_token_ids}" ]; then
-      while IFS= read -r token_id; do
-        [ -n "${token_id}" ] || continue
-        su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token revoke ${token_id}" >/dev/null
-      done <<< "${existing_token_ids}"
-    fi
-
-    CKAN_XLOADER_API_TOKEN="$(
-      su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${CKAN_XLOADER_TOKEN_USER} ${CKAN_XLOADER_TOKEN_NAME} -q" \
-        | tr -d '\r\n'
-    )"
-
-    if [[ ! "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
-      echo "WARNING: Generated xloader token is not JWT-like. Keeping current CKAN_XLOADER_API_TOKEN."
-    elif grep -q "^ckanext.xloader.api_token = " "${CKAN_INI}"; then
-      sed -i "s|^ckanext.xloader.api_token = .*|ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}|" "${CKAN_INI}"
-    else
-      printf "\nckanext.xloader.api_token = %s\n" "${CKAN_XLOADER_API_TOKEN}" >> "${CKAN_INI}"
-    fi
-  fi
-elif [[ ! "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
-  echo "WARNING: CKAN_XLOADER_API_TOKEN is not a JWT-like token; xloader hooks may fail with 403."
+echo "Ensuring admin user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' exists and password matches .env..."
+admin_exists="$(
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d "${CKAN_DB_NAME}" \
+    -tAc "SELECT 1 FROM \"user\" WHERE name='${CKAN_BOOTSTRAP_SYSADMIN_NAME}' LIMIT 1;" \
+    | tr -d '[:space:]'
+)"
+if [ "${admin_exists}" = "1" ]; then
+  su -s /bin/bash ckan -c \
+    "ckan -c ${CKAN_INI} user setpass ${CKAN_BOOTSTRAP_SYSADMIN_NAME} -p ${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
+    >/dev/null
 else
-  echo "WARNING: CKAN_XLOADER_TOKEN_USER is empty; using static CKAN_XLOADER_API_TOKEN as-is."
-  echo "         If uploads fail with NotAuthorized, set CKAN_XLOADER_TOKEN_USER to a sysadmin user."
+  su -s /bin/bash ckan -c \
+    "ckan -c ${CKAN_INI} user add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} email=${CKAN_BOOTSTRAP_SYSADMIN_EMAIL} password=${CKAN_BOOTSTRAP_SYSADMIN_PASSWORD}" \
+    >/dev/null
 fi
+
+if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" >/dev/null 2>&1; then
+  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" | grep -qi "sysadmin"; then
+    echo "WARNING: User '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' is not sysadmin and cannot be promoted automatically."
+    echo "         Skipping xloader token creation."
+  fi
+fi
+
+echo "Rotating xloader API token '${CKAN_XLOADER_TOKEN_NAME}' for user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'..."
+existing_xloader_token_ids="$(
+  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token list ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" \
+    | awk -v token_name="${CKAN_XLOADER_TOKEN_NAME}" '
+        match($0, /^\t?\[([^]]+)\] (.*) - /, m) {
+          if (m[2] == token_name) {
+            print m[1]
+          }
+        }'
+)"
+
+if [ -n "${existing_xloader_token_ids}" ]; then
+  while IFS= read -r token_id; do
+    [ -n "${token_id}" ] || continue
+    su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token revoke ${token_id}" >/dev/null
+  done <<< "${existing_xloader_token_ids}"
+fi
+
+CKAN_XLOADER_API_TOKEN="$(
+  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} ${CKAN_XLOADER_TOKEN_NAME} -q" \
+    | awk '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/ { token=$0 } END { if (token) print token }'
+)"
+
+if [[ "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+  printf "%s" "${CKAN_XLOADER_API_TOKEN}" > "${XLOADER_TOKEN_FILE}"
+  chown ckan:ckan "${XLOADER_TOKEN_FILE}"
+  chmod 600 "${XLOADER_TOKEN_FILE}"
+
+  if grep -q "^ckanext.xloader.api_token = " "${CKAN_INI}"; then
+    sed -i "s|^ckanext.xloader.api_token = .*|ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}|" "${CKAN_INI}"
+  else
+    printf "\nckanext.xloader.api_token = %s\n" "${CKAN_XLOADER_API_TOKEN}" >> "${CKAN_INI}"
+  fi
+else
+  echo "WARNING: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
+fi
+
+echo "=== Set Fair3R Configuration ==="
+[ -n "$FAIR3R_CONTEXT" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.context = ${FAIR3R_CONTEXT}"
+[ -n "$FAIR3R_FCO_URL" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.fco_url = ${FAIR3R_FCO_URL}"
+[ -n "$FAIR3R_SHARED_SECRET" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.shared_secret = ${FAIR3R_SHARED_SECRET}"
+[ -n "$FAIR3R_ENABLE_FCO_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fco_integration = ${FAIR3R_ENABLE_FCO_INTEGRATION}"
+[ -n "$FAIR3R_ENABLE_FDF_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fdf_integration = ${FAIR3R_ENABLE_FDF_INTEGRATION}"
+
+
+echo "=== Set Contact Configuration ==="
+[ -n "$CONTACT_MAIL" ] && ckan config-tool "$CKAN_INI" "ckanext.contact.mail_to = ${CONTACT_MAIL}"
+
+echo "=== Set DOI Configuration ==="
+[ -n "$DOI_ACCOUNT_NAME" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.account_name = ${DOI_ACCOUNT_NAME}"
+[ -n "$DOI_ACCOUNT_PASSWORD" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.account_password = ${DOI_ACCOUNT_PASSWORD}"
+[ -n "$DOI_PREFIX" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.prefix = ${DOI_PREFIX}"
+[ -n "$DOI_PUBLISHER" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.publisher = ${DOI_PUBLISHER}"
+[ -n "$DOI_TEST_MODE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.test_mode = ${DOI_TEST_MODE}"
+[ -n "$DOI_SITE_TITLE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.site_title = ${DOI_SITE_TITLE}"
+
+ckan -c $CKAN_INI doi initdb
+
+echo "=== Set Pages Configuration ==="
+ckan config-tool "$CKAN_INI" "ckanext.pages.organization = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.group = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.allow_html = True"
+ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
+
+ckan --config="$CKAN_INI" db upgrade -p pages
 
 echo "Starting CKAN web and xloader worker via supervisord..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/ckan-supervisord.conf

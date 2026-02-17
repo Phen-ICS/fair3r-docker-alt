@@ -1,1 +1,7 @@
 .env
+.vagrant
+.vs
+.mypy_cache
+.cursor
+.idea
+.vscode
