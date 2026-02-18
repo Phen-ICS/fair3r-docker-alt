@@ -67,6 +67,7 @@ services:
         FAIR3R_EXTENSION_GIT_URL: ${FAIR3R_EXTENSION_GIT_URL}
         PAGE_EXTENSION_GIT_URL: ${PAGE_EXTENSION_GIT_URL}
         DOI_EXTENSION_GIT_URL: ${DOI_EXTENSION_GIT_URL}
+        INSTALL_DEV: "false"
     networks:
       - ckannet
       - dbnet
@@ -77,6 +78,7 @@ services:
     env_file:
       - .env
     environment:
+      INSTALL_DEV: "false"
       CKAN_INI_TEMPLATE: /srv/app/config/ckan.ini.template
       CKAN_INI: /srv/app/ckan.ini
       CKAN_SOLR_URL: http://solr:8983/solr/ckan

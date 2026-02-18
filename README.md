@@ -1,6 +1,6 @@
 # CKAN 2.10 Docker Compose Deployment
 
-This project deploys CKAN **2.10.9** (latest stable `2.10.x`) with:
+This project deploys CKAN **2.10.17** (latest stable `2.10.x`) with:
 
 - `ckan`: CKAN web app + xloader worker in one container (managed by `supervisord`)
 - `db`: PostgreSQL 14
@@ -11,6 +11,7 @@ This project deploys CKAN **2.10.9** (latest stable `2.10.x`) with:
 
 - Docker and Docker Compose plugin installed
 - Open port `5000` on your machine
+- Clone required plugins FAIR3R, DOI and Pages in the src_extensions folder
 
 ## 2) Configure environment
 

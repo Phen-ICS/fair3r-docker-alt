@@ -32,6 +32,29 @@ chown -R ckan:ckan /srv/app/src/ckan/ckan/public/base/i18n
 chmod 640 "${CKAN_INI}"
 chown ckan:ckan "${CKAN_INI}"
 
+# Clone and install plugins EARLY, before any CKAN operations
+# This function clones a plugin from Git if it doesn't exist locally,
+# then installs it in editable mode if it has a Python project file.
+
+echo "Installing custom CKAN plugins (dev mode only)..."
+
+shopt -s nullglob
+
+if [ "${INSTALL_DEV}" = "true" ]; then
+  for plugin_dir in /plugins/*; do
+    [ -d "$plugin_dir" ] || continue
+
+    if [ -f "$plugin_dir/setup.py" ] || [ -f "$plugin_dir/pyproject.toml" ]; then
+      plugin_name=$(basename "$plugin_dir")
+      echo "Installing plugin (dev mode): ${plugin_name}"
+      pip install -e "$plugin_dir"
+    else
+      echo "Skipping $(basename "$plugin_dir") (not a Python project)"
+    fi
+  done
+fi
+
+
 echo "Ensuring DataStore database and user exist..."
 if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -h "${CKAN_DB_HOST}" \

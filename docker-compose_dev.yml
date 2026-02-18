@@ -45,15 +45,14 @@ services:
       context: ./ckan
       args:
         CKAN_VERSION: ${CKAN_VERSION}
-        FAIR3R_EXTENSION_GIT_URL: ${FAIR3R_EXTENSION_GIT_URL}
-        PAGE_EXTENSION_GIT_URL: ${PAGE_EXTENSION_GIT_URL}
-        DOI_EXTENSION_GIT_URL: ${DOI_EXTENSION_GIT_URL}
+        INSTALL_DEV: "true"
 
     container_name: ckan-app
     restart: unless-stopped
     env_file:
       - .env
     environment:
+      INSTALL_DEV: "true"
       CKAN_INI_TEMPLATE: /srv/app/config/ckan.ini.template
       CKAN_INI: /srv/app/ckan.ini
       CKAN_SOLR_URL: http://solr:8983/solr/ckan
@@ -74,6 +73,7 @@ services:
     volumes:
       - ckan_storage:/var/lib/ckan
       - ./ckan/config:/srv/app/config:ro
+      - ./src_extensions:/plugins:rw
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:5000/api/3/action/status_show || exit 1"]
       interval: 20s
