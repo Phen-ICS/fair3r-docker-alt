@@ -9,3 +9,5 @@
 .key
 certs/*.key 
 certs/*.crt
+nginx/certs/*.key
+nginx/certs/*.crt

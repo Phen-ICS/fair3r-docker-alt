@@ -1,0 +1,6 @@
+services:
+  ckan:
+    ports:
+      - "${CKAN_PORT}:5000"
+    volumes:
+      - ./src_extensions:/plugins:rw
