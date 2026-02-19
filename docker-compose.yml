@@ -12,6 +12,10 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:${NGINX_SSLPORT_HOST}:${NGINX_SSLPORT}"
+    volumes:
+      - ./certs:/etc/nginx/certs
+    restart: unless-stopped
+
   db:
     image: postgres:14
     networks:

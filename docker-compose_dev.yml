@@ -1,4 +1,18 @@
 services:
+  nginx:
+    build:
+      context: nginx/
+      dockerfile: Dockerfile
+    depends_on:
+      ckan:
+        condition: service_healthy
+    ports:
+      - "${NGINX_SSLPORT_HOST}:${NGINX_SSLPORT}"
+    volumes:
+      - ./certs:/etc/nginx/certs
+    restart: unless-stopped
+    environment:
+      - DEV_MODE=true
   db:
     image: postgres:14
     container_name: ckan-db

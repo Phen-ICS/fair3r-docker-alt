@@ -5,3 +5,7 @@
 .cursor
 .idea
 .vscode
+.crt
+.key
+certs/*.key 
+certs/*.crt
