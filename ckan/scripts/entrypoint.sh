@@ -44,12 +44,20 @@ if [ "${INSTALL_DEV}" = "true" ]; then
   for plugin_dir in /plugins/*; do
     [ -d "$plugin_dir" ] || continue
 
+    plugin_name=$(basename "$plugin_dir")
+
+    # Installer les dev-requirements si présents
+    if [ -f "$plugin_dir/dev-requirements.txt" ]; then
+        echo "Installing dev dependencies for ${plugin_name}"
+        pip install --ignore-installed -r "$plugin_dir/dev-requirements.txt"
+    fi
+
+    # Installer le plugin en mode editable si c'est un projet Python
     if [ -f "$plugin_dir/setup.py" ] || [ -f "$plugin_dir/pyproject.toml" ]; then
-      plugin_name=$(basename "$plugin_dir")
       echo "Installing plugin (dev mode): ${plugin_name}"
       pip install -e "$plugin_dir"
     else
-      echo "Skipping $(basename "$plugin_dir") (not a Python project)"
+      echo "Skipping ${plugin_name} (not a Python project)"
     fi
   done
 fi
