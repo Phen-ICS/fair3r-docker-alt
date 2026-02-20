@@ -1,3 +1,8 @@
+![Docker](https://img.shields.io/badge/docker-24.x-blue)
+![CKAN](https://img.shields.io/badge/CKAN-2.10.7-orange)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blueviolet)
+![Redis](https://img.shields.io/badge/Redis-7-red)
+
 # CKAN 2.10 Docker Compose Deployment
 
 This project deploys CKAN **2.10.7** (latest stable `2.10.x`) with:
