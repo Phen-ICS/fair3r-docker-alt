@@ -46,13 +46,13 @@ if [ "${INSTALL_DEV}" = "true" ]; then
 
     plugin_name=$(basename "$plugin_dir")
 
-    # Installer les dev-requirements si présents
+    # Install dev requirements if the file exists
     if [ -f "$plugin_dir/dev-requirements.txt" ]; then
         echo "Installing dev dependencies for ${plugin_name}"
-        pip install --ignore-installed -r "$plugin_dir/dev-requirements.txt"
+        pip install --ignore-installed --no-deps -r "$plugin_dir/dev-requirements.txt"
     fi
 
-    # Installer le plugin en mode editable si c'est un projet Python
+    # Install the plugin in editable mode if it has a Python project file
     if [ -f "$plugin_dir/setup.py" ] || [ -f "$plugin_dir/pyproject.toml" ]; then
       echo "Installing plugin (dev mode): ${plugin_name}"
       pip install -e "$plugin_dir"
@@ -124,16 +124,6 @@ PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -d postgres \
   -c "ALTER DATABASE ${CKAN_DATASTORE_DB_NAME} OWNER TO ${CKAN_DATASTORE_DB_USER};"
 
-echo "Applying DataStore permissions..."
-su -s /bin/bash ckan -c \
-  "ckan -c ${CKAN_INI} datastore set-permissions | awk 'BEGIN {emit=0} /^\\/\\*/ {emit=1} emit {print}'" \
-  | PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
-      -v ON_ERROR_STOP=1 \
-      -h "${CKAN_DB_HOST}" \
-      -p "${CKAN_DB_PORT}" \
-      -U "${CKAN_DB_USER}" \
-      -d postgres
-
 echo "Checking CKAN database state..."
 if PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -h "${CKAN_DB_HOST}" \
@@ -147,6 +137,16 @@ else
   echo "No CKAN tables found. Running initial database setup..."
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} db init"
 fi
+
+echo "Applying DataStore permissions..."
+su -s /bin/bash ckan -c \
+  "ckan -c ${CKAN_INI} datastore set-permissions | awk 'BEGIN {emit=0} /^\\/\\*/ {emit=1} emit {print}'" \
+  | PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+      -v ON_ERROR_STOP=1 \
+      -h "${CKAN_DB_HOST}" \
+      -p "${CKAN_DB_PORT}" \
+      -U "${CKAN_DB_USER}" \
+      -d postgres
 
 echo "Ensuring admin user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' exists and password matches .env..."
 admin_exists="$(

@@ -1,6 +1,6 @@
 # CKAN 2.10 Docker Compose Deployment
 
-This project deploys CKAN **2.10.17** (latest stable `2.10.x`) with:
+This project deploys CKAN **2.10.7** (latest stable `2.10.x`) with:
 
 - `ckan`: CKAN web app + xloader worker in one container (managed by `supervisord`)
 - `db`: PostgreSQL 14
@@ -11,7 +11,6 @@ This project deploys CKAN **2.10.17** (latest stable `2.10.x`) with:
 
 - Docker and Docker Compose plugin installed
 - Open port `5000` on your machine
-- Clone required plugins FAIR3R, DOI and Pages in the src_extensions folder
 
 ## 2) Configure environment
 
@@ -21,7 +20,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Edit `.env` and set secure values for:
+Edit `.env` and set options extensions and secure values for:
 
 - `CKAN_SESSION_SECRET`
 - `CKAN_APP_INSTANCE_UUID`
@@ -30,14 +29,22 @@ Edit `.env` and set secure values for:
 - `CKAN_DATASTORE_DB_PASSWORD`
 - `CKAN_DATASTORE_READONLY_PASSWORD`
 
-To auto-install your FAIR3R extension at image build time and enable the
+# To auto-install your FAIR3R extension at image build time and enable the
 plugin in CKAN, set:
 
 - `FAIR3R_EXTENSION_GIT_URL` (eg `git+http://oauth2:<TOKEN>@serv-gitlab.../ckanext-fair3r.git`)
 - `CKAN_EXTRA_PLUGINS=fair3r`
+- `CKAN_DEBUG=false`
 
 `FAIR3R_EXTENSION_GIT_URL` is passed as a Docker build arg, and if set the
 Dockerfile runs `pip install` on it.
+
+# Or place FAIR3R extension in src_extension folder to install it in dev mode:
+
+You should then set:
+- `CKAN_EXTRA_PLUGINS=fair3r`
+- `CKAN_DEBUG=true`
+
 
 For automatic xloader token rotation at startup (recommended), also set:
 
@@ -60,10 +67,16 @@ If `CKAN_BOOTSTRAP_SYSADMIN_NAME` is set, startup will create/promote that user 
 
 ## 3) Start services
 
-Build and start all services:
+Build and start all services in debug mode:
 
 ```bash
 docker compose up -d --build
+```
+
+Build and start all services in production mode:
+
+```bash
+docker compose -f docker-compose.yml up -d --build
 ```
 
 Follow logs:
