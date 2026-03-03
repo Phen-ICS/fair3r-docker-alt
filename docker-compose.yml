@@ -88,6 +88,8 @@ services:
       CKAN_REDIS_URL: redis://redis:6379/1
       CKAN_XLOADER_JOBS_DB_URI: postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@db/${CKAN_DB_NAME}
       CKAN_EXTRA_PLUGINS: ${CKAN_EXTRA_PLUGINS}
+      CKAN_TEST_DB_NAME: ${CKAN_TEST_DB_NAME}
+      CKAN_DATASTORE_TEST_DB_NAME: ${CKAN_DATASTORE_TEST_DB_NAME}
     depends_on:
       db:
         condition: service_healthy

@@ -124,6 +124,43 @@ PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -d postgres \
   -c "ALTER DATABASE ${CKAN_DATASTORE_DB_NAME} OWNER TO ${CKAN_DATASTORE_DB_USER};"
 
+echo "Creating test databases..."
+# Create CKAN test database if it doesn't exist
+if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+  -h "${CKAN_DB_HOST}" \
+  -p "${CKAN_DB_PORT}" \
+  -U "${CKAN_DB_USER}" \
+  -d postgres \
+  -tAc "SELECT 1 FROM pg_database WHERE datname='${CKAN_TEST_DB_NAME}'" | grep -q 1; then
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d postgres \
+    -c "CREATE DATABASE ${CKAN_TEST_DB_NAME} OWNER ${CKAN_DB_USER};"
+  echo "Created ${CKAN_TEST_DB_NAME} database."
+else
+  echo "${CKAN_TEST_DB_NAME} database already exists."
+fi
+
+# Create DataStore test database if it doesn't exist
+if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+  -h "${CKAN_DB_HOST}" \
+  -p "${CKAN_DB_PORT}" \
+  -U "${CKAN_DB_USER}" \
+  -d postgres \
+  -tAc "SELECT 1 FROM pg_database WHERE datname='${CKAN_DATASTORE_TEST_DB_NAME}'" | grep -q 1; then
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d postgres \
+    -c "CREATE DATABASE ${CKAN_DATASTORE_TEST_DB_NAME} OWNER ${CKAN_DATASTORE_DB_USER};"
+  echo "Created ${CKAN_DATASTORE_TEST_DB_NAME} database."
+else
+  echo "${CKAN_DATASTORE_TEST_DB_NAME} database already exists."
+fi
+
 echo "Checking CKAN database state..."
 if PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -h "${CKAN_DB_HOST}" \
