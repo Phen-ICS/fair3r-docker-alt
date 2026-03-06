@@ -1,0 +1,4 @@
+ckanext-xloader==2.3.0
+chardet==4.0.0
+tabulator==1.53.5
+unidecode==1.4.0

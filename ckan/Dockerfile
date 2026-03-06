@@ -34,7 +34,7 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
     fi
 
 # Extensions toujours installées
-RUN pip install --no-cache-dir ckanext-xloader chardet==4.0.0 tabulator unidecode
+RUN pip install --no-cache-dir ckanext-xloader==2.3.0 chardet==4.0.0 tabulator==1.53.5 unidecode==1.4.0
 RUN pip install --no-cache-dir -e "git+https://github.com/USEPA/ckanext-plotly.git@master#egg=ckanext-plotly"
 RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-pdfview.git@master#egg=ckanext-pdfview"
 RUN pip install --no-cache-dir -e "git+https://github.com/NaturalHistoryMuseum/ckanext-contact.git@main#egg=ckanext-contact"
