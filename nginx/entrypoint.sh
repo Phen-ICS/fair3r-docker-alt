@@ -12,7 +12,9 @@ if [ ! -f /etc/nginx/certs/ckan-local.crt ]; then
     -days 365
 fi
 
-if [ "$DEV_MODE" = "true" ]; then
+FAIR3R_CONTEXT="$(printf '%s' "${FAIR3R_CONTEXT}" | tr '[:lower:]' '[:upper:]')"
+
+if [ "$FAIR3R_CONTEXT" = "DEV" ]; then
   CACHE_DIRECTIVE=""
 else
   CACHE_DIRECTIVE="proxy_cache_valid 30m;"

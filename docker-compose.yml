@@ -13,7 +13,7 @@ services:
       - ./nginx/certs:/etc/nginx/certs
     restart: unless-stopped
     environment:
-      DEV_MODE: ${CKAN_DEBUG}
+      FAIR3R_CONTEXT: ${FAIR3R_CONTEXT}
     networks:
       - webnet
       - ckannet
