@@ -26,6 +26,8 @@ wait_for_service "redis" "6379" "Redis"
 echo "Rendering CKAN config from template..."
 envsubst < "${CKAN_INI_TEMPLATE}" > "${CKAN_INI}"
 
+FAIR3R_CONTEXT="$(printf '%s' "${FAIR3R_CONTEXT}" | tr '[:lower:]' '[:upper:]')"
+
 mkdir -p /var/lib/ckan /var/lib/ckan/storage
 chown -R ckan:ckan /var/lib/ckan
 chown -R ckan:ckan /srv/app/src/ckan/ckan/public/base/i18n
@@ -36,11 +38,11 @@ chown ckan:ckan "${CKAN_INI}"
 # This function clones a plugin from Git if it doesn't exist locally,
 # then installs it in editable mode if it has a Python project file.
 
-echo "Installing custom CKAN plugins (dev mode only)..."
+echo "Installing custom CKAN plugins from mounted sources (DEV context only)..."
 
 shopt -s nullglob
 
-if [ "${INSTALL_DEV}" = "true" ]; then
+if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
   for plugin_dir in /plugins/*; do
     [ -d "$plugin_dir" ] || continue
 
@@ -275,5 +277,11 @@ ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
 
 ckan --config="$CKAN_INI" db upgrade -p pages
 
-echo "Starting CKAN web and xloader worker via supervisord..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/ckan-supervisord.conf
+if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
+  SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-dev.conf"
+else
+  SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-prod.conf"
+fi
+
+echo "Starting CKAN web and xloader worker via supervisord (${SUPERVISORD_CONFIG})..."
+exec /usr/bin/supervisord -c "${SUPERVISORD_CONFIG}"

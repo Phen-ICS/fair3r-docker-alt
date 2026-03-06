@@ -70,7 +70,7 @@ services:
       context: ./ckan
       args:
         CKAN_VERSION: ${CKAN_VERSION}
-        INSTALL_DEV: ${CKAN_DEBUG}
+        FAIR3R_CONTEXT: ${FAIR3R_CONTEXT}
         FAIR3R_EXTENSION_GIT_URL: ${FAIR3R_EXTENSION_GIT_URL}
         PAGE_EXTENSION_GIT_URL: ${PAGE_EXTENSION_GIT_URL}
         DOI_EXTENSION_GIT_URL: ${DOI_EXTENSION_GIT_URL}
@@ -80,12 +80,12 @@ services:
       - .env
     environment:
       CKAN_DEBUG: ${CKAN_DEBUG}
-      INSTALL_DEV: ${CKAN_DEBUG}
       FAIR3R_CONTEXT: ${FAIR3R_CONTEXT}
       CKAN_INI_TEMPLATE: /srv/app/config/ckan.ini.template
       CKAN_INI: /srv/app/ckan.ini
       CKAN_SOLR_URL: http://solr:8983/solr/ckan
       CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_INTERNAL_SITE_URL: ${CKAN_INTERNAL_SITE_URL}
       CKAN_XLOADER_JOBS_DB_URI: postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@db/${CKAN_DB_NAME}
       CKAN_EXTRA_PLUGINS: ${CKAN_EXTRA_PLUGINS}
       CKAN_TEST_DB_NAME: ${CKAN_TEST_DB_NAME}
