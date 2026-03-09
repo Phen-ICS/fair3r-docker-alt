@@ -1,0 +1,15 @@
+services:
+  ckan:
+    ports:
+      - "${CKAN_PORT}:5000"
+    volumes:
+      - ./src_extensions:/plugins:rw
+  db:
+    ports:
+      - "${CKAN_DB_PORT_EXT}:${CKAN_DB_PORT}"
+    networks:
+      dbnet:
+
+networks:
+  dbnet:
+    internal: false

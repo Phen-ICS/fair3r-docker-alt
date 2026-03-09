@@ -26,11 +26,44 @@ wait_for_service "redis" "6379" "Redis"
 echo "Rendering CKAN config from template..."
 envsubst < "${CKAN_INI_TEMPLATE}" > "${CKAN_INI}"
 
+FAIR3R_CONTEXT="$(printf '%s' "${FAIR3R_CONTEXT}" | tr '[:lower:]' '[:upper:]')"
+
 mkdir -p /var/lib/ckan /var/lib/ckan/storage
 chown -R ckan:ckan /var/lib/ckan
 chown -R ckan:ckan /srv/app/src/ckan/ckan/public/base/i18n
 chmod 640 "${CKAN_INI}"
 chown ckan:ckan "${CKAN_INI}"
+
+# Clone and install plugins EARLY, before any CKAN operations
+# This function clones a plugin from Git if it doesn't exist locally,
+# then installs it in editable mode if it has a Python project file.
+
+echo "Installing custom CKAN plugins from mounted sources (DEV context only)..."
+
+shopt -s nullglob
+
+if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
+  for plugin_dir in /plugins/*; do
+    [ -d "$plugin_dir" ] || continue
+
+    plugin_name=$(basename "$plugin_dir")
+
+    # Install dev requirements if the file exists
+    if [ -f "$plugin_dir/dev-requirements.txt" ]; then
+        echo "Installing dev dependencies for ${plugin_name}"
+        pip install --ignore-installed --no-deps -r "$plugin_dir/dev-requirements.txt"
+    fi
+
+    # Install the plugin in editable mode if it has a Python project file
+    if [ -f "$plugin_dir/setup.py" ] || [ -f "$plugin_dir/pyproject.toml" ]; then
+      echo "Installing plugin (dev mode): ${plugin_name}"
+      pip install -e "$plugin_dir"
+    else
+      echo "Skipping ${plugin_name} (not a Python project)"
+    fi
+  done
+fi
+
 
 echo "Ensuring DataStore database and user exist..."
 if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
@@ -93,15 +126,42 @@ PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
   -d postgres \
   -c "ALTER DATABASE ${CKAN_DATASTORE_DB_NAME} OWNER TO ${CKAN_DATASTORE_DB_USER};"
 
-echo "Applying DataStore permissions..."
-su -s /bin/bash ckan -c \
-  "ckan -c ${CKAN_INI} datastore set-permissions | awk 'BEGIN {emit=0} /^\\/\\*/ {emit=1} emit {print}'" \
-  | PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
-      -v ON_ERROR_STOP=1 \
-      -h "${CKAN_DB_HOST}" \
-      -p "${CKAN_DB_PORT}" \
-      -U "${CKAN_DB_USER}" \
-      -d postgres
+echo "Creating test databases..."
+# Create CKAN test database if it doesn't exist
+if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+  -h "${CKAN_DB_HOST}" \
+  -p "${CKAN_DB_PORT}" \
+  -U "${CKAN_DB_USER}" \
+  -d postgres \
+  -tAc "SELECT 1 FROM pg_database WHERE datname='${CKAN_TEST_DB_NAME}'" | grep -q 1; then
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d postgres \
+    -c "CREATE DATABASE ${CKAN_TEST_DB_NAME} OWNER ${CKAN_DB_USER};"
+  echo "Created ${CKAN_TEST_DB_NAME} database."
+else
+  echo "${CKAN_TEST_DB_NAME} database already exists."
+fi
+
+# Create DataStore test database if it doesn't exist
+if ! PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+  -h "${CKAN_DB_HOST}" \
+  -p "${CKAN_DB_PORT}" \
+  -U "${CKAN_DB_USER}" \
+  -d postgres \
+  -tAc "SELECT 1 FROM pg_database WHERE datname='${CKAN_DATASTORE_TEST_DB_NAME}'" | grep -q 1; then
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d postgres \
+    -c "CREATE DATABASE ${CKAN_DATASTORE_TEST_DB_NAME} OWNER ${CKAN_DATASTORE_DB_USER};"
+  echo "Created ${CKAN_DATASTORE_TEST_DB_NAME} database."
+else
+  echo "${CKAN_DATASTORE_TEST_DB_NAME} database already exists."
+fi
 
 echo "Checking CKAN database state..."
 if PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
@@ -116,6 +176,16 @@ else
   echo "No CKAN tables found. Running initial database setup..."
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} db init"
 fi
+
+echo "Applying DataStore permissions..."
+su -s /bin/bash ckan -c \
+  "ckan -c ${CKAN_INI} datastore set-permissions | awk 'BEGIN {emit=0} /^\\/\\*/ {emit=1} emit {print}'" \
+  | PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+      -v ON_ERROR_STOP=1 \
+      -h "${CKAN_DB_HOST}" \
+      -p "${CKAN_DB_PORT}" \
+      -U "${CKAN_DB_USER}" \
+      -d postgres
 
 echo "Ensuring admin user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' exists and password matches .env..."
 admin_exists="$(
@@ -207,5 +277,11 @@ ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
 
 ckan --config="$CKAN_INI" db upgrade -p pages
 
-echo "Starting CKAN web and xloader worker via supervisord..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/ckan-supervisord.conf
+if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
+  SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-dev.conf"
+else
+  SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-prod.conf"
+fi
+
+echo "Starting CKAN web and xloader worker via supervisord (${SUPERVISORD_CONFIG})..."
+exec /usr/bin/supervisord -c "${SUPERVISORD_CONFIG}"

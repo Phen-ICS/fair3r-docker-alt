@@ -1,144 +1,162 @@
+![Docker](https://img.shields.io/badge/docker-24.x-blue)
+![CKAN](https://img.shields.io/badge/CKAN-2.10.7-orange)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blueviolet)
+![Redis](https://img.shields.io/badge/Redis-7-red)
+
 # CKAN 2.10 Docker Compose Deployment
 
-This project deploys CKAN **2.10.9** (latest stable `2.10.x`) with:
+This project deploys CKAN `2.10.7` with:
 
-- `ckan`: CKAN web app + xloader worker in one container (managed by `supervisord`)
-- `db`: PostgreSQL 14
-- `solr`: `ckan/ckan-solr:2.10-solr9`
-- `redis`: Redis 7
+- `ckan` (ckan web instance + xloader worker, managed by `supervisord`)
+- `db` (a database for ckan and extensions: `postgres:14`)
+- `solr` (the search engine: `ckan/ckan-solr:2.10-solr9`)
+- `redis` (`redis:7-alpine`)
+- `nginx` (webserver for browser access)
 
 ## 1) Prerequisites
 
-- Docker and Docker Compose plugin installed
-- Open port `5000` on your machine
+- Docker Engine + Docker Compose plugin
+- Needed ports:
+  - `8085` (HTTPS through nginx)
+  - `5000` (direct CKAN in dev override)
+  - `5435` (optional DB access from host)
 
-## 2) Configure environment
+## 2) Setup `.env`
 
-Copy the example environment file:
+Create your local env file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set secure values for:
+Update at least the following values in `.env`:
 
-- `CKAN_SESSION_SECRET`
-- `CKAN_APP_INSTANCE_UUID`
-- `CKAN_XLOADER_API_TOKEN`
-- `CKAN_DB_PASSWORD`
-- `CKAN_DATASTORE_DB_PASSWORD`
-- `CKAN_DATASTORE_READONLY_PASSWORD`
+- Secrets:
+  - `CKAN_SESSION_SECRET`
+  - `CKAN_APP_INSTANCE_UUID`
+  - `CKAN_DB_PASSWORD`
+  - `CKAN_DATASTORE_DB_PASSWORD`
+  - `CKAN_DATASTORE_READONLY_PASSWORD`
+- CKAN URLs:
+  - `CKAN_SITE_URL` (public URL used by users, eg `https://localhost:8085`, or `https://mydomain.eu`)
+  - `CKAN_INTERNAL_SITE_URL` (container-internal URL for xloader, keep `http://ckan:5000`)
+- Extension context:
+  - `FAIR3R_CONTEXT` must be one of `DEV`, `TEST`, `DEMO`, `PROD`
 
-To auto-install your FAIR3R extension at image build time and enable the
-plugin in CKAN, set:
+Mode behavior:
 
-- `FAIR3R_EXTENSION_GIT_URL` (eg `git+http://oauth2:<TOKEN>@serv-gitlab.../ckanext-fair3r.git`)
-- `CKAN_EXTRA_PLUGINS=fair3r`
+- `FAIR3R_CONTEXT=DEV`:
+  - dev supervisor profile
+  - CKAN reloader enabled
+  - editable install from `/plugins` mount
+- `FAIR3R_CONTEXT=TEST|DEMO|PROD`:
+  - prod supervisor profile
+  - CKAN reloader disabled
+  - extension install at image build time (from git URLs)
 
-`FAIR3R_EXTENSION_GIT_URL` is passed as a Docker build arg, and if set the
-Dockerfile runs `pip install` on it.
+## 3) Install extensions at image build time (not development)
 
-For automatic xloader token rotation at startup (recommended), also set:
+Use this mode for test/demo/prod-like environments.
 
-- `CKAN_XLOADER_TOKEN_USER` (existing CKAN user, usually a sysadmin)
-- `CKAN_XLOADER_TOKEN_NAME` (defaults to `xloader`)
-- `CKAN_BOOTSTRAP_SYSADMIN_NAME` (optional, create/promote this user at startup)
-- `CKAN_BOOTSTRAP_SYSADMIN_EMAIL` (required only when creating the bootstrap user)
-- `CKAN_BOOTSTRAP_SYSADMIN_PASSWORD` (required only when creating the bootstrap user)
+In `.env`:
 
-When `CKAN_XLOADER_TOKEN_USER` is set, startup will:
+- `FAIR3R_CONTEXT=PROD` (or `TEST` / `DEMO`)
+- `CKAN_DEBUG` = **false**
+- Set git URLs:
+  - `FAIR3R_EXTENSION_GIT_URL`
+  - `PAGE_EXTENSION_GIT_URL`
+  - `DOI_EXTENSION_GIT_URL`
+- Enable plugins:
+  - `CKAN_EXTRA_PLUGINS="fair3r doi pages"`
 
-1. list the user's API tokens,
-2. revoke tokens named `CKAN_XLOADER_TOKEN_NAME`,
-3. create a new token with that name,
-4. inject it into `ckan.ini` as `ckanext.xloader.api_token`.
-
-Note: this is done at container startup (not image build), because token creation needs a live CKAN database and initialized app.
-The startup script ensures `CKAN_XLOADER_TOKEN_USER` is sysadmin before issuing the token; otherwise xloader may fail with `NotAuthorized` when downloading resources.
-If `CKAN_BOOTSTRAP_SYSADMIN_NAME` is set, startup will create/promote that user before rotating the xloader token, so `CKAN_XLOADER_API_TOKEN` can be left empty.
-
-## 3) Start services
-
-Build and start all services:
+Then build and start:
 
 ```bash
 docker compose up -d --build
 ```
 
-Follow logs:
+## 4) Install extensions for development (editable mode)
+
+Use this mode when actively modifying extension code.
+
+In `.env`:
+
+- `FAIR3R_CONTEXT=DEV`
+- `CKAN_DEBUG` = **true**
+- `CKAN_EXTRA_PLUGINS="fair3r doi pages"`
+
+Clone your extensions into `src_extensions`:
 
 ```bash
-docker compose logs -f ckan
+git clone <fair3r_repo_url> src_extensions/ckanext-fair3r
+git clone <doi_repo_url> src_extensions/ckanext-doi
+git clone <pages_repo_url> src_extensions/ckanext-pages
 ```
 
-CKAN will be available at:
+Then start:
 
-- `http://localhost:5000`
+```bash
+docker compose up -d --build
+```
 
-## 4) Stop services
+In this mode, extensions under `src_extensions` are installed/editable in container startup, and CKAN reload is enabled.
 
-Stop without deleting data:
+## 5) Start, restart, stop services
+
+Start (or start again in background):
+
+```bash
+docker compose up -d
+```
+
+Rebuild changed images and restart:
+
+```bash
+docker compose up -d --build
+```
+
+Restart running containers (no rebuild):
+
+```bash
+docker compose restart
+```
+
+Stop and remove containers/networks:
 
 ```bash
 docker compose down
 ```
 
-Stop and remove volumes (full reset):
+**Full reset** (ALSO REMOVE VOLUMES):
 
 ```bash
-docker compose down -v
+docker compose down -v --remove-orphans
 ```
 
-## 5) Create a sysadmin user
+Useful checks:
 
-Use the included helper script:
+```bash
+docker compose ps
+docker compose logs -f ckan
+```
+
+## 6) Create a sysadmin user
+
+Use the helper script:
 
 ```bash
 docker compose exec ckan /srv/app/scripts/create_sysadmin.sh admin admin@example.com "StrongPassword123!"
 ```
 
-You can then log in with this user and administer CKAN.
+Or use automatic bootstrap at startup by setting in `.env`:
 
-## 6) Verify xloader is running
+- `CKAN_BOOTSTRAP_SYSADMIN_NAME`
+- `CKAN_BOOTSTRAP_SYSADMIN_EMAIL`
+- `CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`
 
-The xloader worker runs in the same `ckan` container through `supervisord`.
+## 7) Notes
 
-Check both processes:
-
-```bash
-docker compose exec ckan supervisorctl status
-```
-
-Expected:
-
-- `ckan-web` in `RUNNING`
-- `xloader-worker` in `RUNNING`
-
-To verify xloader behavior:
-
-1. Upload a tabular resource (CSV) to a dataset.
-2. Ensure DataStore is enabled for the resource.
-3. Check worker logs:
-
-```bash
-docker compose logs -f ckan
-```
-
-Look for `xloader` job execution entries and successful DataStore load messages.
-
-## 7) Notes on initialization
-
-- At container startup, entrypoint script waits for PostgreSQL, Solr, and Redis.
-- It renders `/srv/app/ckan.ini` from `ckan/config/ckan.ini.template`.
-- It creates the DataStore DB/user if missing and applies `datastore set-permissions`.
-- Database setup is idempotent:
+- `CKAN_INTERNAL_SITE_URL` should stay reachable from inside the `ckan` container (default `http://ckan:5000`), otherwise xloader will fail (for exemple, you will not be able to upload csv(s) into the datastore).
+- Startup is idempotent:
   - fresh DB: `ckan db init`
   - existing DB: `ckan db upgrade`
-
-## 8) Production readiness considerations
-
-- Replace all example secrets in `.env`.
-- Use a reverse proxy (Nginx/Traefik) with TLS in front of CKAN.
-- Restrict DB/Solr/Redis network exposure to private networks only.
-- Enable regular backups for PostgreSQL and persistent Docker volumes.
-- Monitor logs and container health checks (`docker compose ps`).

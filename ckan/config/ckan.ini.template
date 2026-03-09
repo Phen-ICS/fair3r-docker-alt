@@ -1,10 +1,10 @@
 [DEFAULT]
-debug = false
+debug = ${CKAN_DEBUG}
 
 [app:main]
 use = egg:ckan
 
-ckan.plugins = stats text_view image_view datatables_view recline_view datastore xloader ${CKAN_EXTRA_PLUGINS}
+ckan.plugins = stats text_view image_view datatables_view recline_view datastore xloader plotly_explorer pdf_view contact ${CKAN_EXTRA_PLUGINS}
 
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
@@ -23,10 +23,10 @@ ckan.datastore.read_url = postgresql://${CKAN_DATASTORE_READONLY_USER}:${CKAN_DA
 
 ckanext.xloader.jobs_db.uri = ${CKAN_XLOADER_JOBS_DB_URI}
 ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}
-ckanext.xloader.site_url = ${CKAN_SITE_URL}
+ckanext.xloader.site_url = ${CKAN_INTERNAL_SITE_URL}
 ckanext.xloader.formats = csv application/csv
 
-ckan.views.default_views = image_view datatables_view text_view
+ckan.views.default_views = image_view datatables_view text_view pdf_view plotly_explorer
 
 [server:main]
 use = egg:waitress#main
