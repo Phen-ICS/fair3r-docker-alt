@@ -4,7 +4,7 @@ debug = ${CKAN_DEBUG}
 [app:main]
 use = egg:ckan
 
-ckan.plugins = stats text_view image_view datatables_view recline_view datastore xloader plotly_explorer pdf_view contact ${CKAN_EXTRA_PLUGINS}
+ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view contact ${CKAN_EXTRA_PLUGINS}
 
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
@@ -16,17 +16,20 @@ ckan.storage_path = /var/lib/ckan/storage
 
 beaker.session.key = ckan
 beaker.session.secret = ${CKAN_SESSION_SECRET}
+SECRET_KEY = ${CKAN_SECRET_KEY}
 app_instance_uuid = ${CKAN_APP_INSTANCE_UUID}
 
 ckan.datastore.write_url = postgresql://${CKAN_DATASTORE_DB_USER}:${CKAN_DATASTORE_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DATASTORE_DB_NAME}
 ckan.datastore.read_url = postgresql://${CKAN_DATASTORE_READONLY_USER}:${CKAN_DATASTORE_READONLY_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DATASTORE_DB_NAME}
 
 ckanext.xloader.jobs_db.uri = ${CKAN_XLOADER_JOBS_DB_URI}
-ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}
+# NOTE: Set this via the CKAN UI (Admin > Config) or by editing the ini
+# before using xloader; this placeholder just allows CKAN to start.
+ckanext.xloader.api_token = change-me-xloader-token
 ckanext.xloader.site_url = ${CKAN_INTERNAL_SITE_URL}
 ckanext.xloader.formats = csv application/csv
 
-ckan.views.default_views = image_view datatables_view text_view pdf_view plotly_explorer
+ckan.views.default_views = image_view datatables_view text_view pdf_view ${CKAN_EXTRA_VIEWS}
 
 [server:main]
 use = egg:waitress#main

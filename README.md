@@ -1,15 +1,15 @@
 ![Docker](https://img.shields.io/badge/docker-24.x-blue)
-![CKAN](https://img.shields.io/badge/CKAN-2.10.7-orange)
+![CKAN](https://img.shields.io/badge/CKAN-2.11.4-orange)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blueviolet)
 ![Redis](https://img.shields.io/badge/Redis-7-red)
 
-# CKAN 2.10 Docker Compose Deployment
+# CKAN 2.11 Docker Compose Deployment
 
-This project deploys CKAN `2.10.7` with:
+This project deploys CKAN `2.11.4` with:
 
 - `ckan` (ckan web instance + xloader worker, managed by `supervisord`)
 - `db` (a database for ckan and extensions: `postgres:14`)
-- `solr` (the search engine: `ckan/ckan-solr:2.10-solr9`)
+- `solr` (the search engine: `ckan/ckan-solr:2.11-solr9`)
 - `redis` (`redis:7-alpine`)
 - `nginx` (webserver for browser access)
 
@@ -67,7 +67,8 @@ In `.env`:
   - `PAGE_EXTENSION_GIT_URL`
   - `DOI_EXTENSION_GIT_URL`
 - Enable plugins:
-  - `CKAN_EXTRA_PLUGINS="fair3r doi pages"`
+  - `CKAN_EXTRA_PLUGINS="fair3r doi pages plotly_explorer"`
+  - `CKAN_EXTRA_VIEWS="plotly_explorer"`
 
 Then build and start:
 
@@ -83,7 +84,8 @@ In `.env`:
 
 - `FAIR3R_CONTEXT=DEV`
 - `CKAN_DEBUG` = **true**
-- `CKAN_EXTRA_PLUGINS="fair3r doi pages"`
+- `CKAN_EXTRA_PLUGINS="fair3r doi pages plotly_explorer"`
+- `CKAN_EXTRA_VIEWS="plotly_explorer"`
 
 Clone your extensions into `src_extensions`:
 

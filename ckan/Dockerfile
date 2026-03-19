@@ -1,4 +1,4 @@
-ARG CKAN_VERSION=2.10.7
+ARG CKAN_VERSION=2.11.4
 FROM ckan/ckan-base:${CKAN_VERSION}
 
 # Build args
@@ -35,14 +35,15 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
 
 # Extensions toujours installées
 RUN pip install --no-cache-dir ckanext-xloader==2.3.0 chardet==4.0.0 tabulator==1.53.5 unidecode==1.4.0
-RUN pip install --no-cache-dir -e "git+https://github.com/USEPA/ckanext-plotly.git@master#egg=ckanext-plotly"
 RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-pdfview.git@master#egg=ckanext-pdfview"
 RUN pip install --no-cache-dir -e "git+https://github.com/NaturalHistoryMuseum/ckanext-contact.git@main#egg=ckanext-contact"
+#RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-excelforms.git@main#egg=ckanext-excelforms"
+RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-dsaudit.git@master#egg=ckanext-dsaudit"
 
 # Dev-only extensions
 RUN if [ "$FAIR3R_CONTEXT" = "DEV" ]; then \
       echo "Installing dev-only extensions..."; \
-      pip install --no-cache-dir flask-debugtoolbar==0.13.1; \
+      pip install --no-cache-dir flask-debugtoolbar==0.16.0; \
     fi
 
 # Prod-only extensions

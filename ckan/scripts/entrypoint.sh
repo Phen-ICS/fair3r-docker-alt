@@ -28,11 +28,16 @@ envsubst < "${CKAN_INI_TEMPLATE}" > "${CKAN_INI}"
 
 FAIR3R_CONTEXT="$(printf '%s' "${FAIR3R_CONTEXT}" | tr '[:lower:]' '[:upper:]')"
 
+# CKAN 2.11 asserts that legacy config option "lang" is not set.
+# In container environments LANG can leak into CKAN config as "lang",
+# so clear locale env vars before invoking CKAN CLI commands.
+unset LANG
+unset LC_ALL
+
 mkdir -p /var/lib/ckan /var/lib/ckan/storage
-chown -R ckan:ckan /var/lib/ckan
-chown -R ckan:ckan /srv/app/src/ckan/ckan/public/base/i18n
+chown -R ckan /var/lib/ckan
 chmod 640 "${CKAN_INI}"
-chown ckan:ckan "${CKAN_INI}"
+chown ckan "${CKAN_INI}"
 
 # Clone and install plugins EARLY, before any CKAN operations
 # This function clones a plugin from Git if it doesn't exist locally,
@@ -210,42 +215,38 @@ fi
 if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" >/dev/null 2>&1; then
   if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" | grep -qi "sysadmin"; then
     echo "WARNING: User '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' is not sysadmin and cannot be promoted automatically."
-    echo "         Skipping xloader token creation."
   fi
 fi
 
-echo "Rotating xloader API token '${CKAN_XLOADER_TOKEN_NAME}' for user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'..."
-existing_xloader_token_ids="$(
-  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token list ${CKAN_BOOTSTRAP_SYSADMIN_NAME}" \
-    | awk -v token_name="${CKAN_XLOADER_TOKEN_NAME}" '
-        match($0, /^\t?\[([^]]+)\] (.*) - /, m) {
-          if (m[2] == token_name) {
-            print m[1]
-          }
-        }'
-)"
+# Extract JWT from output (CKAN CLI may mix INFO logs with token on stdout)
+extract_jwt() {
+  grep -oE 'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | tail -1
+}
 
-if [ -n "${existing_xloader_token_ids}" ]; then
-  while IFS= read -r token_id; do
-    [ -n "${token_id}" ] || continue
-    su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token revoke ${token_id}" >/dev/null
-  done <<< "${existing_xloader_token_ids}"
-fi
-
-CKAN_XLOADER_API_TOKEN="$(
-  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} ${CKAN_XLOADER_TOKEN_NAME} -q" \
-    | awk '/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/ { token=$0 } END { if (token) print token }'
-)"
-
-if [[ "${CKAN_XLOADER_API_TOKEN}" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
-  if grep -q "^ckanext.xloader.api_token = " "${CKAN_INI}"; then
-    sed -i "s|^ckanext.xloader.api_token = .*|ckanext.xloader.api_token = ${CKAN_XLOADER_API_TOKEN}|" "${CKAN_INI}"
+# Ensure Xloader API token exists for admin user (rotate on every entrypoint run)
+# Revoke via psql (fast, no CKAN startup) then create via single ckan invocation
+XLOADER_TOKEN_NAME="Xloader"
+XLOADER_TOKEN_FILE="/var/lib/ckan/xloader.token"
+if [ -n "${CKAN_BOOTSTRAP_SYSADMIN_NAME}" ]; then
+  echo "Ensuring Xloader API token for admin user '${CKAN_BOOTSTRAP_SYSADMIN_NAME}' (rotating)..."
+  PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+    -h "${CKAN_DB_HOST}" \
+    -p "${CKAN_DB_PORT}" \
+    -U "${CKAN_DB_USER}" \
+    -d "${CKAN_DB_NAME}" \
+    -tAc "DELETE FROM api_token WHERE name = '${XLOADER_TOKEN_NAME}' AND user_id = (SELECT id FROM \"user\" WHERE name = '${CKAN_BOOTSTRAP_SYSADMIN_NAME}');" \
+    >/dev/null 2>&1 || true
+  raw_output="$(su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user token add ${CKAN_BOOTSTRAP_SYSADMIN_NAME} ${XLOADER_TOKEN_NAME} -q" 2>/dev/null)"
+  xloader_token="$(echo "${raw_output}" | extract_jwt)"
+  if [ -n "${xloader_token}" ]; then
+    echo "${xloader_token}" > "${XLOADER_TOKEN_FILE}"
+    chown ckan "${XLOADER_TOKEN_FILE}"
+    chmod 600 "${XLOADER_TOKEN_FILE}"
+    ckan config-tool "${CKAN_INI}" "ckanext.xloader.api_token = ${xloader_token}"
+    echo "Created new Xloader API token for admin user."
   else
-    printf "\nckanext.xloader.api_token = %s\n" "${CKAN_XLOADER_API_TOKEN}" >> "${CKAN_INI}"
+    echo "WARNING: Could not create Xloader API token; xloader may not work correctly."
   fi
-else
-  echo "ERROR: Failed to create a valid xloader token for '${CKAN_BOOTSTRAP_SYSADMIN_NAME}'."
-  exit 1
 fi
 
 echo "=== Set Fair3R Configuration ==="

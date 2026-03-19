@@ -37,7 +37,7 @@ services:
       - dbnet
 
   solr:
-    image: ckan/ckan-solr:2.10-solr9
+    image: ckan/ckan-solr:2.11-solr9
     container_name: ckan-solr
     restart: unless-stopped
     volumes:
@@ -88,6 +88,7 @@ services:
       CKAN_INTERNAL_SITE_URL: ${CKAN_INTERNAL_SITE_URL}
       CKAN_XLOADER_JOBS_DB_URI: postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@db/${CKAN_DB_NAME}
       CKAN_EXTRA_PLUGINS: ${CKAN_EXTRA_PLUGINS}
+      CKAN_EXTRA_VIEWS: ${CKAN_EXTRA_VIEWS}
       CKAN_TEST_DB_NAME: ${CKAN_TEST_DB_NAME}
       CKAN_DATASTORE_TEST_DB_NAME: ${CKAN_DATASTORE_TEST_DB_NAME}
     depends_on:
