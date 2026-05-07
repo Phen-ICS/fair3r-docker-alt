@@ -1,11 +1,11 @@
 ![Docker](https://img.shields.io/badge/docker-24.x-blue)
-![CKAN](https://img.shields.io/badge/CKAN-2.11.4-orange)
+![CKAN](https://img.shields.io/badge/CKAN-2.11.5-orange)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blueviolet)
 ![Redis](https://img.shields.io/badge/Redis-7-red)
 
-# CKAN 2.11 Docker Compose Deployment
+# CKAN 2.11 Fair3r Docker Compose Deployment
 
-This project deploys CKAN `2.11.4` with:
+This project deploys CKAN `2.11.5` with:
 
 - `ckan` (ckan web instance + xloader worker, managed by `supervisord`)
 - `db` (a database for ckan and extensions: `postgres:14`)
@@ -41,7 +41,7 @@ Update at least the following values in `.env`:
   - `CKAN_SITE_URL` (public URL used by users, eg `https://localhost:8085`, or `https://mydomain.eu`)
   - `CKAN_INTERNAL_SITE_URL` (container-internal URL for xloader, keep `http://ckan:5000`)
 - Extension context:
-  - `FAIR3R_CONTEXT` must be one of `DEV`, `TEST`, `DEMO`, `PROD`
+  - `FAIR3R_CONTEXT` must be one of `DEV`, `INTEGRATION`, `VALIDATION`, `PRODUCTION`
 
 Mode behavior:
 
@@ -49,23 +49,28 @@ Mode behavior:
   - dev supervisor profile
   - CKAN reloader enabled
   - editable install from `/plugins` mount
-- `FAIR3R_CONTEXT=TEST|DEMO|PROD`:
-  - prod supervisor profile
+- `FAIR3R_CONTEXT=INTEGRATION|VALIDATION|PRODUCTION`:
+  - production supervisor profile (same as packaged `supervisord.prod.conf` in the image)
   - CKAN reloader disabled
   - extension install at image build time (from git URLs)
 
-## 3) Install extensions at image build time (not development)
+## 3) Fair3R extensions via GitLab PyPI (`INTEGRATION` / `VALIDATION` / `PRODUCTION`)
 
-Use this mode for test/demo/prod-like environments.
+For non-development contexts, extensions are pulled from GitLab Package Registry PyPI **when the CKAN container starts** (credentials from `.env`, not bundled in the image).
 
 In `.env`:
 
-- `FAIR3R_CONTEXT=PROD` (or `TEST` / `DEMO`)
+- `FAIR3R_CONTEXT=PRODUCTION` (or `INTEGRATION` / `VALIDATION`)
 - `CKAN_DEBUG` = **false**
-- Set git URLs:
-  - `FAIR3R_EXTENSION_GIT_URL`
-  - `PAGE_EXTENSION_GIT_URL`
-  - `DOI_EXTENSION_GIT_URL`
+- `GITLAB_EXTENSIONS_PYPI_HOST` (in our case `gitlab.igbmc.u-strasbg.fr`)
+  - `FAIR3R_EXTENSION_PYPI_TOKEN`
+  - `PAGE_EXTENSION_PYPI_TOKEN`
+  - `DOI_EXTENSION_PYPI_TOKEN`
+  - `PLOTLY_EXTENSION_PYPI_TOKEN`
+  - `FAIR3R_PYPI_PROJECT_ID`
+  - `PAGE_PYPI_PROJECT_ID`
+  - `DOI_PYPI_PROJECT_ID`
+  - `PLOTLY_PYPI_PROJECT_ID`
 - Enable plugins:
   - `CKAN_EXTRA_PLUGINS="fair3r doi pages plotly_explorer"`
   - `CKAN_EXTRA_VIEWS="plotly_explorer"`
@@ -76,14 +81,22 @@ Then build and start:
 docker compose up -d --build
 ```
 
-## 4) Install extensions for development (editable mode)
+Details and project ID defaults match [`deploy/README.md`](./deploy/README.md) and `deploy/ansible/group_vars/all.yml`.
 
-Use this mode when actively modifying extension code.
+## 4) Development (`DEV`): GitLab PyPI and/or editable `src_extensions`
+
+Use **`FAIR3R_CONTEXT=DEV`** when developing.
+
+Leave the GitLab PyPI token variables (and host) in `.env` empty. On startup the entrypoint will not installs the four extensions from the registry.
+
+Clone into `src_extensions` (mounted as `/plugins`; directory names must match the pip distribution names, e.g. `src_extensions/ckanext-fair3r`, `src_extensions/ckanext` for the DOI extension).
+2. Set the same GitLab tokens if you **also** want wheels for extensions you are **not** mounting; for any directory under `/plugins`, the entrypoint runs `pip install -e` **after** the registry step so your tree wins.
 
 In `.env`:
 
 - `FAIR3R_CONTEXT=DEV`
-- `CKAN_DEBUG` = **true**
+- `CKAN_DEBUG=true`
+- Tokens and/or mounted repos as needed
 - `CKAN_EXTRA_PLUGINS="fair3r doi pages plotly_explorer"`
 - `CKAN_EXTRA_VIEWS="plotly_explorer"`
 
@@ -91,8 +104,9 @@ Clone your extensions into `src_extensions`:
 
 ```bash
 git clone <fair3r_repo_url> src_extensions/ckanext-fair3r
-git clone <doi_repo_url> src_extensions/ckanext-doi
+git clone <doi_repo_url> src_extensions/ckanext
 git clone <pages_repo_url> src_extensions/ckanext-pages
+git clone <plotly_repo_url> src_extensions/ckanext-plotly
 ```
 
 Then start:
@@ -101,7 +115,7 @@ Then start:
 docker compose up -d --build
 ```
 
-In this mode, extensions under `src_extensions` are installed/editable in container startup, and CKAN reload is enabled.
+Editable installs apply on each container start while CKAN’s dev reloader watches code changes where supported.
 
 ## 5) Start, restart, stop services
 
@@ -162,3 +176,87 @@ Or use automatic bootstrap at startup by setting in `.env`:
 - Startup is idempotent:
   - fresh DB: `ckan db init`
   - existing DB: `ckan db upgrade`
+
+## 8) Deployment
+
+Fair3R runs in four deployment contexts (`dev` plus three native VMs):
+
+| Context        | Where it runs                                                         | How it is triggered                                                                 |
+|----------------|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| `dev`          | Developer workstation, Docker Compose stack (the sections above)      | `docker compose up -d --build` from this repo root with a local `.env`              |
+| `validation`   | Ubuntu Noble VM `serv-ics-fair3r-d-01`, native package install        | Manual GitLab CI job **`deploy_validation`**                                        |
+| `integration`  | Ubuntu Noble VM `serv-ics-fair3r-t-01`, native package install      | Manual GitLab CI job **`deploy_integration`**                                       |
+| `production`     | Ubuntu Noble VM `serv-ics-fair3r-p-01`, native package install        | Manual GitLab CI job **`deploy_production`**                                        |
+
+### `validation`, `integration`, and `production` (native install on Ubuntu Noble)
+
+These contexts do **not** use Docker. They install CKAN 2.11 from the
+official `python-ckan_2.11-noble_amd64.deb` package (see the [CKAN 2.11
+install-from-package
+docs](https://docs.ckan.org/en/2.11/maintaining/installing/install-from-package.html))
+and provision the VM end-to-end — Postgres, Solr 9, Redis, nginx, systemd
+units — via the Ansible project under [`deploy/`](./deploy/).
+
+The pipeline's `deploy_validation` / `deploy_integration` / `deploy_production` jobs (defined in the root
+[`.gitlab-ci.yml`](./.gitlab-ci.yml)) run
+[`deploy/ansible_deploy.py`](./deploy/ansible_deploy.py), which wraps
+`ansible-playbook` and forwards every secret as a per-context Ansible
+variable (`validation_ckan_db_password`, `integration_fair3r_extension_pypi_token`, `production_ckan_db_password`, …).
+All secrets must be configured as GitLab CI/CD variables — see
+[`deploy/README.md`](./deploy/README.md) for the full table.
+
+The resulting instance is supposed to be **identical** to the `dev` stack:
+
+- Same CKAN version (2.11.5), same extensions (`xloader`, `pdf_view`,
+  `contact`, `dsaudit`, `fair3r`, `doi`, `pages`, `plotly_explorer`) and
+  same default views.
+- Same `ckan.ini` (rendered by `envsubst` from the authoritative
+  `ckan/config/ckan.ini.template`; only the output path differs:
+  `/etc/ckan/default/ckan.ini` on the VM vs `/srv/app/ckan.ini` in the
+  container).
+- Same bootstrap flow (sysadmin create-or-sync, Xloader token rotation,
+  fair3r / doi / pages `config-tool` settings, `doi initdb`,
+  `db upgrade -p pages`).
+- Same two long-running processes — `ckan-web` and `ckan jobs worker` —
+  but managed by **systemd** (`ckan-web.service`, `ckan-worker.service`)
+  instead of supervisord.
+
+### Running the Ansible playbook manually
+
+Requirements:
+
+- A clean Ubuntu 24 Virtual machine (e.g: host "serv-ics-fair3r-d-01")
+- Access without password to the VM. Using SSH key.
+- Ansible installed on the machine running the command.
+
+```bash
+pip install ansible
+ansible-galaxy collection install -r deploy/ansible/requirements.yml
+
+python3 deploy/ansible_deploy.py \
+  --env validation \
+  --host serv-ics-fair3r-d-01 \
+  --ckan-session-secret ... \
+  --ckan-secret-key ... \
+  --ckan-db-password ... \
+  --fair3r-extension-pypi-token ... \
+  --page-extension-pypi-token ... \
+  --doi-extension-pypi-token ... \
+  --plotly-extension-pypi-token ... \
+  ... \
+  --check   # dry-run (adds --check --diff to ansible-playbook)
+```
+
+Non-secret per-context values (site URL, contact mail, DOI publisher /
+`test_mode` / site title) and pipeline-level non-secrets (sysadmin name +
+email, `fair3r_enable_fdf_integration`) live in
+[`deploy/ansible/group_vars/`](./deploy/ansible/group_vars/) — edit those
+files and commit; no CLI flag needed.
+
+See [`deploy/README.md`](./deploy/README.md) for the full CLI flag list
+and the post-deploy QA checklist.
+
+### Important note :
+
+DEV environnement is using python 3.10.19 (because of docker ckan-base:2.11.5)
+Validation and production will be using 3.12 python, because we cannot get ubuntu 22 VMs from IT. This remains a major difference between environments.

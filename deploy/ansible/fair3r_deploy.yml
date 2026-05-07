@@ -1,0 +1,99 @@
+---
+# Fair3R CKAN native deployment playbook.
+#
+# Installs CKAN 2.11 as a system package on a single Ubuntu Noble VM, along
+# with Postgres, Solr 9, Redis, and an nginx reverse proxy. Preserves the
+# idempotency contract of ckan/scripts/entrypoint.sh (db init vs upgrade,
+# sysadmin password sync, Xloader token rotation, extension config-tool
+# settings).
+#
+# Invoked via deploy/ansible_deploy.py, which translates CLI flags (coming
+# from GitLab CI variables) into per-context Ansible vars (e.g.
+# validation_ckan_db_password, integration_ckan_db_password, production_ckan_db_password).
+
+- name: Deploy Fair3R CKAN (native package install)
+  # `target_host` is always provided by deploy/ansible_deploy.py at runtime.
+  # The `| default('all')` fallback exists purely so that static analysis
+  # (ansible-lint's syntax-check rule, which does not receive -e vars) can
+  # evaluate the template; it has no effect on real deploys.
+  hosts: "{{ target_host | default('all') }}"
+  remote_user: devics
+  become: yes
+  gather_facts: yes
+
+  vars:
+    context: "{{ context }}"
+    # Uppercase form of `context`, used as the value of ckanext.fair3r.context
+    # in ckan.ini and mirrored in the Xloader/DOI/Pages config-tool calls.
+    # Derived here rather than passed in from CI to keep the two in lock-step.
+    fair3r_context: "{{ context | upper }}"
+
+  pre_tasks:
+    - name: Build environment configuration
+      set_fact:
+        env_config:
+          # ------- Per-context secrets -------
+          # Sourced from GitLab CI variables and forwarded by
+          # ansible_deploy.py as <context>_<key>= (e.g. validation_ckan_db_password).
+          ckan_session_secret: "{{ lookup('vars', context + '_ckan_session_secret') }}"
+          ckan_secret_key: "{{ lookup('vars', context + '_ckan_secret_key') }}"
+          ckan_app_instance_uuid: "{{ lookup('vars', context + '_ckan_app_instance_uuid') }}"
+          ckan_db_password: "{{ lookup('vars', context + '_ckan_db_password') }}"
+          ckan_datastore_db_password: "{{ lookup('vars', context + '_ckan_datastore_db_password') }}"
+          ckan_datastore_readonly_password: "{{ lookup('vars', context + '_ckan_datastore_readonly_password') }}"
+          ckan_bootstrap_sysadmin_password: "{{ lookup('vars', context + '_ckan_bootstrap_sysadmin_password') }}"
+
+          # GitLab Package Registry PyPI: one deploy token or PAT per extension
+          # project (read_package / read_api as required by your GitLab policy).
+          extension_pypi_tokens:
+            "ckanext-fair3r": "{{ lookup('vars', context + '_fair3r_extension_pypi_token') }}"
+            "ckanext-pages": "{{ lookup('vars', context + '_page_extension_pypi_token') }}"
+            "ckanext-fair3r-doi": "{{ lookup('vars', context + '_doi_extension_pypi_token') }}"
+            "ckanext-plotly": "{{ lookup('vars', context + '_plotly_extension_pypi_token') }}"
+
+          # DOI API credentials / identifiers (per-context secrets).
+          doi_account_name: "{{ lookup('vars', context + '_doi_account_name') }}"
+          doi_account_password: "{{ lookup('vars', context + '_doi_account_password') }}"
+          doi_prefix: "{{ lookup('vars', context + '_doi_prefix') }}"
+
+          # ------- Per-context non-secrets (from group_vars/<context>.yml) -------
+          ckan_site_url: "{{ ckan_site_url }}"
+          contact_mail: "{{ contact_mail }}"
+          doi_publisher: "{{ doi_publisher }}"
+          doi_test_mode: "{{ doi_test_mode }}"
+          doi_site_title: "{{ doi_site_title }}"
+
+          # ------- Pipeline-level non-secrets (from group_vars/all.yml) -------
+          ckan_bootstrap_sysadmin_name: "{{ ckan_bootstrap_sysadmin_name }}"
+          ckan_bootstrap_sysadmin_email: "{{ ckan_bootstrap_sysadmin_email }}"
+          fair3r_enable_fdf_integration: "{{ fair3r_enable_fdf_integration }}"
+
+    - name: Assert required per-context secrets are present
+      assert:
+        that:
+          - env_config.ckan_session_secret | length > 0
+          - env_config.ckan_secret_key | length > 0
+          - env_config.ckan_db_password | length > 0
+          - env_config.ckan_datastore_db_password | length > 0
+          - env_config.ckan_datastore_readonly_password | length > 0
+          - env_config.ckan_bootstrap_sysadmin_password | length > 0
+          - env_config.extension_pypi_tokens['ckanext-fair3r'] | length > 0
+          - env_config.extension_pypi_tokens['ckanext-pages'] | length > 0
+          - env_config.extension_pypi_tokens['ckanext-fair3r-doi'] | length > 0
+          - env_config.extension_pypi_tokens['ckanext-plotly'] | length > 0
+          - env_config.doi_account_password | length > 0
+          - env_config.ckan_site_url | length > 0
+        fail_msg: "One or more required per-context variables are missing. Check GitLab CI variables for context '{{ context }}', and group_vars/{{ context }}.yml for non-secrets."
+
+  roles:
+    - system
+    - postgres
+    - solr
+    - redis
+    - ckan_package
+    - ckan_extensions
+    - ckan_config
+    - ckan_bootstrap
+    - ckan_services
+    - nginx
+    - verification

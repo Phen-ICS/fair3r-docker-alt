@@ -1,0 +1,47 @@
+---
+# Base OS packages + locale + timezone. Runs before anything CKAN-specific.
+
+- name: Ensure apt cache is up to date
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base system packages
+  apt:
+    name:
+      - acl
+      - bash
+      - ca-certificates
+      - curl
+      - gettext-base        # provides envsubst
+      - git
+      - gnupg
+      - locales
+      - openjdk-17-jre-headless  # needed by Solr 9
+      - postgresql-client
+      - python3
+      - python3-pip
+      - python3-psycopg2     # required by community.postgresql modules
+      - python3-venv
+      - rsync
+      - tzdata
+      - unzip
+      - wget
+    state: present
+
+- name: Generate en_US.UTF-8 locale
+  community.general.locale_gen:
+    name: en_US.UTF-8
+    state: present
+
+- name: Set system timezone
+  community.general.timezone:
+    name: "{{ system_timezone | default('Europe/Paris') }}"
+
+- name: Ensure /opt/fair3r directory exists (deploy work directory)
+  file:
+    path: /opt/fair3r
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'

@@ -1,0 +1,45 @@
+---
+# Install nginx reverse proxy. HTTP-only for now (certbot/LE to be wired in a
+# later step, same as the ics-standalone-app-template reference project).
+
+- name: Ensure nginx package is installed
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Drop Fair3R nginx site config ({{ context }})
+  copy:
+    # Playbook: deploy/ansible/fair3r_deploy.yml -> repo root: deploy/nginx_<context>.conf
+    src: "{{ playbook_dir }}/../nginx_{{ context }}.conf"
+    dest: /etc/nginx/sites-available/fair3r
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload nginx
+
+- name: Enable Fair3R nginx site
+  file:
+    src: /etc/nginx/sites-available/fair3r
+    dest: /etc/nginx/sites-enabled/fair3r
+    state: link
+    force: yes
+  notify: reload nginx
+
+- name: Remove default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Remove CKAN-package-supplied nginx site (conflicts with ours)
+  file:
+    path: /etc/nginx/sites-enabled/ckan
+    state: absent
+  notify: reload nginx
+
+- name: Ensure nginx service is started and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: yes

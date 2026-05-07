@@ -1,0 +1,6 @@
+---
+# Ansible Galaxy collections required by the Fair3R deployment roles.
+collections:
+  - name: community.postgresql
+  - name: community.general
+  - name: ansible.posix

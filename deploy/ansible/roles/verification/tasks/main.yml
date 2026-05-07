@@ -1,0 +1,49 @@
+---
+# Post-deploy smoke tests. Fails the playbook if CKAN isn't responding or
+# the xloader worker isn't running.
+
+- name: Wait for CKAN to answer status_show (up to 90s)
+  uri:
+    url: "http://{{ ckan_web_host }}:{{ ckan_web_port }}/api/3/action/status_show"
+    return_content: yes
+    status_code: 200
+  register: status_show
+  retries: 30
+  delay: 3
+  until: status_show.status == 200 and (status_show.json.success | default(false))
+
+- name: Verify status_show reports success
+  assert:
+    that:
+      - status_show.json.success
+    fail_msg: "CKAN /api/3/action/status_show did not report success: {{ status_show.json }}"
+
+- name: Verify ckan-web systemd unit is active
+  command: systemctl is-active ckan-web
+  register: ckan_web_status
+  changed_when: false
+  failed_when: ckan_web_status.stdout.strip() != "active"
+
+- name: Verify ckan-worker systemd unit is active
+  command: systemctl is-active ckan-worker
+  register: ckan_worker_status
+  changed_when: false
+  failed_when: ckan_worker_status.stdout.strip() != "active"
+
+- name: Verify nginx is active
+  command: systemctl is-active nginx
+  register: nginx_status
+  changed_when: false
+  failed_when: nginx_status.stdout.strip() != "active"
+
+- name: Print deployment summary
+  debug:
+    msg:
+      - "Fair3R CKAN deployed on {{ inventory_hostname }}"
+      - "Context:            {{ fair3r_context }}"
+      - "CKAN version:       {{ status_show.json.result.ckan_version | default('?') }}"
+      - "Site title:         {{ status_show.json.result.site_title | default('?') }}"
+      - "Site URL:           {{ env_config.ckan_site_url }}"
+      - "ckan-web systemd:   {{ ckan_web_status.stdout.strip() }}"
+      - "ckan-worker systemd:{{ ckan_worker_status.stdout.strip() }}"
+      - "nginx systemd:      {{ nginx_status.stdout.strip() }}"

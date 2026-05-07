@@ -1,0 +1,22 @@
+---
+- name: reload systemd and restart ckan-web
+  systemd:
+    name: ckan-web
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+
+- name: reload systemd and restart ckan-worker
+  systemd:
+    name: ckan-worker
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+
+- name: restart ckan-web and worker after ckan.ini change
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - ckan-web
+    - ckan-worker

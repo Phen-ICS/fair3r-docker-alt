@@ -1,0 +1,18 @@
+{# Same layout as CKAN deb ckan-uwsgi.ini; uid/gid match systemd User (storage owner). See CKAN 2.11 package install docs. #}
+[uwsgi]
+
+http            = {{ ckan_web_host }}:{{ ckan_web_port }}
+uid             = {{ ckan_os_user }}
+gid             = {{ ckan_os_user }}
+wsgi-file       = {{ ckan_config_dir }}/wsgi.py
+virtualenv      = {{ ckan_venv }}
+module          = wsgi:application
+master          = true
+pidfile         = /tmp/fair3r_ckan_uwsgi.pid
+harakiri        = 50
+max-requests    = 5000
+vacuum          = true
+callable        = application
+buffer-size     = 32768
+strict          = true
+die-on-term     = true

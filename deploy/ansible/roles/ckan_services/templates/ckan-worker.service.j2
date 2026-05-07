@@ -1,0 +1,20 @@
+[Unit]
+Description=Fair3R CKAN jobs worker (xloader) ({{ fair3r_context }})
+After=network.target postgresql.service redis-server.service ckan-web.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User={{ ckan_os_user }}
+Group={{ ckan_os_user }}
+WorkingDirectory={{ ckan_config_dir }}
+Environment=LANG=
+Environment=LC_ALL=
+ExecStart={{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} jobs worker
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

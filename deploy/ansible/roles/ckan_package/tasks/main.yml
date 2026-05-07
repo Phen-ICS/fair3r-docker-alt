@@ -1,0 +1,107 @@
+---
+# Install the CKAN 2.11 Ubuntu package from packaging.ckan.org.
+#
+# The package creates the 'ckan' system user, installs a virtualenv at
+# /usr/lib/ckan/default, ships uWSGI + /etc/ckan/default/{wsgi.py,ckan-uwsgi.ini},
+# and supervisor + nginx + apache2. We disable apache2 immediately (nginx is our
+# front door), neutralise the supervisor configs because the web stack is systemd
+# (uWSGI in ckan-web, same binary as packaged supervisor), plus ckan-worker.
+
+- name: Install CKAN package dependencies
+  apt:
+    name:
+      - libpq5
+      - supervisor
+      - nginx
+    state: present
+    update_cache: yes
+
+- name: Download CKAN deb package
+  get_url:
+    url: "{{ ckan_deb_url }}"
+    dest: "/opt/fair3r/{{ ckan_deb_url | basename }}"
+    mode: '0644'
+
+- name: Read upstream version from downloaded CKAN deb
+  shell: |
+    set -e
+    v=$(dpkg-deb -f "/opt/fair3r/{{ ckan_deb_url | basename }}" Version)
+    v="${v#*:}"
+    printf '%s\n' "${v%%-*}"
+  register: ckan_deb_upstream
+  changed_when: false
+
+- name: Check if the CKAN python package is already installed
+  shell: "dpkg-query -W -f='${Version}' python-ckan || true"
+  register: ckan_pkg_version
+  changed_when: false
+
+- name: Require CKAN deb to match ckan_version when no package is installed yet
+  assert:
+    that:
+      - ckan_deb_upstream.stdout | trim == ckan_version | trim
+    fail_msg: >-
+      The deb at ckan_deb_url installs upstream {{ ckan_deb_upstream.stdout | trim }}, but
+      ckan_version is {{ ckan_version }}. Align both in group_vars/all.yml (or override
+      ckan_deb_url to a package matching ckan_version) before first install.
+  when: ckan_pkg_version.stdout | length == 0
+
+- name: Install CKAN deb package
+  apt:
+    deb: "/opt/fair3r/{{ ckan_deb_url | basename }}"
+    state: present
+  when:
+    - ckan_pkg_version.stdout | length == 0
+    - ckan_deb_upstream.stdout | trim == ckan_version | trim
+
+- name: Ensure CKAN os user exists (created by the deb, but double-check)
+  user:
+    name: "{{ ckan_os_user }}"
+    system: yes
+    state: present
+
+- name: Ensure CKAN config directory exists
+  file:
+    path: "{{ ckan_config_dir }}"
+    state: directory
+    owner: root
+    group: "{{ ckan_os_user }}"
+    mode: '0750'
+
+- name: Ensure CKAN storage directory exists
+  file:
+    path: "{{ ckan_storage_path }}"
+    state: directory
+    owner: "{{ ckan_os_user }}"
+    group: "{{ ckan_os_user }}"
+    mode: '0755'
+
+- name: Ensure CKAN state directory exists
+  file:
+    path: "{{ ckan_state_dir }}"
+    state: directory
+    owner: "{{ ckan_os_user }}"
+    group: "{{ ckan_os_user }}"
+    mode: '0755'
+
+# Disable Apache which the deb pulls in and enables by default.
+- name: Disable apache2 service (nginx is our reverse proxy)
+  service:
+    name: apache2
+    state: stopped
+    enabled: no
+  failed_when: false
+
+# Remove the supervisor-managed CKAN units that ship with the deb so they do
+# not race with our systemd units.
+- name: Find supervisor ckan* config files
+  find:
+    paths: /etc/supervisor/conf.d
+    patterns: "ckan*.conf"
+  register: supervisor_ckan_confs
+
+- name: Disable supervisor ckan configs by renaming them
+  command: "mv {{ item.path }} {{ item.path }}.disabled"
+  loop: "{{ supervisor_ckan_confs.files }}"
+  when: supervisor_ckan_confs.matched > 0
+  notify: reload supervisor

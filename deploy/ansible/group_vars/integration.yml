@@ -1,0 +1,11 @@
+---
+# Per-context non-secret values for the integration VM (serv-ics-fair3r-t-01).
+# Ansible auto-loads this file for any host in the [integration] inventory group.
+
+ckan_site_url: "https://fair3r.integration.igbmc.u-strasbg.fr"
+contact_mail: "groupe-info-ics@igbmc.fr"
+doi_publisher: "Institut Clinique de la Souris"
+# DOI sandbox (same as validation).
+doi_test_mode: "true"
+doi_site_title: "Fair3R"
+fair3r_enable_fdf_integration: "true"

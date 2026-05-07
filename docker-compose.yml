@@ -71,9 +71,6 @@ services:
       args:
         CKAN_VERSION: ${CKAN_VERSION}
         FAIR3R_CONTEXT: ${FAIR3R_CONTEXT}
-        FAIR3R_EXTENSION_GIT_URL: ${FAIR3R_EXTENSION_GIT_URL}
-        PAGE_EXTENSION_GIT_URL: ${PAGE_EXTENSION_GIT_URL}
-        DOI_EXTENSION_GIT_URL: ${DOI_EXTENSION_GIT_URL}
     container_name: ckan-app
     restart: unless-stopped
     env_file:

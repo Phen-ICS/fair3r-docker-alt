@@ -1,0 +1,13 @@
+---
+# Per-context non-secret values for the validation VM (serv-ics-fair3r-d-01).
+# Ansible auto-loads this file for any host in the [validation] inventory group.
+# Public URL: DNS must point to the reverse proxy in front of this host.
+
+ckan_site_url: "https://validation.fair3r.fr"
+contact_mail: "groupe-info-ics@igbmc.fr"
+doi_publisher: "Institut Clinique de la Souris"
+# DOI sandbox.
+doi_test_mode: "true"
+doi_site_title: "Fair3R"
+# Fair3R extension.
+fair3r_enable_fdf_integration: "true"

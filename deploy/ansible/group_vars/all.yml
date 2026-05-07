@@ -1,0 +1,68 @@
+---
+# Defaults shared by every native-deploy context (validation, integration,
+# production). All of these can be overridden with
+# -e key=value from ansible_deploy.py (and hence from GitLab CI variables).
+
+ckan_version: "2.11.5"
+
+# Official CKAN 2.11 package URL. The base project is built for Ubuntu
+# Noble (24.04); if your VM is on a different release, override
+# `ckan_deb_url` from the CLI (e.g. the -jammy or -focal variant).
+ckan_deb_url: "https://packaging.ckan.org/python-ckan_2.11-noble_amd64.deb"
+
+# Filesystem layout (match the CKAN 2.11 package install defaults).
+ckan_venv: "/usr/lib/ckan/default"
+ckan_config_dir: "/etc/ckan/default"
+ckan_ini: "/etc/ckan/default/ckan.ini"
+ckan_ini_template: "/etc/ckan/default/ckan.ini.template"
+ckan_storage_path: "/var/lib/ckan/storage"
+ckan_state_dir: "/var/lib/ckan"
+ckan_os_user: "ckan"
+
+# Ports. CKAN web binds to loopback, nginx is the only public-facing listener.
+ckan_web_host: "127.0.0.1"
+ckan_web_port: 8080
+# Dedicated Fair3R uWSGI profile
+ckan_uwsgi_ini: "{{ ckan_config_dir }}/fair3r-ckan-uwsgi.ini"
+ckan_internal_site_url: "http://127.0.0.1:8080"
+
+# Solr.
+solr_version: "9.9.0"
+solr_core: "ckan"
+solr_url: "http://127.0.0.1:8983/solr/ckan"
+solr_schema_url: "https://raw.githubusercontent.com/ckan/ckan/ckan-{{ ckan_version }}/ckan/config/solr/schema.xml"
+
+# Redis.
+redis_url: "redis://127.0.0.1:6379/1"
+
+# Database names / users (same values as dev .env; NOT secret).
+ckan_db_user: "ckan"
+ckan_db_name: "ckan"
+ckan_db_host: "127.0.0.1"
+ckan_db_port: 5432
+ckan_datastore_db_user: "ckan_datastore"
+ckan_datastore_db_name: "datastore"
+ckan_datastore_readonly_user: "ckan_datastore_ro"
+ckan_test_db_name: "ckan_test"
+ckan_datastore_test_db_name: "datastore_test"
+
+# Plugin list mirrors the dev envsubst result. Driven by CKAN_EXTRA_PLUGINS /
+# CKAN_EXTRA_VIEWS in dev; here we default to the same values used in dev.
+ckan_extra_plugins: "fair3r doi pages plotly_explorer"
+ckan_extra_views: "plotly_explorer"
+
+# Bootstrap admin user (name + email are non-secret; same across contexts).
+ckan_bootstrap_sysadmin_name: "admin"
+ckan_bootstrap_sysadmin_email: "admin@igbmc.u-strasbg.fr"
+
+# Fair3R extensions: install from GitLab Package Registry (PyPI API), not git+.
+# Each key is the pip distribution name; value is the GitLab project ID whose
+# PyPI simple index is /api/v4/projects/<id>/packages/pypi/simple.
+# Authentication: one deploy token or PAT per extension project, passed via CI
+# as <context>_fair3r_extension_pypi_token, *_page_*, *_doi_*, *_plotly_* (see deploy/README.md).
+gitlab_extensions_pypi_host: "gitlab.igbmc.u-strasbg.fr"
+ckan_extensions_gitlab_pypi_project_ids:
+  "ckanext-fair3r": 862
+  "ckanext-pages": 863
+  "ckanext-fair3r-doi": 860
+  "ckanext-plotly": 891
