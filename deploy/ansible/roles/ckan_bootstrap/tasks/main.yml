@@ -1,0 +1,183 @@
+---
+# Port of ckan/scripts/entrypoint.sh, steps 4-10 (everything after the config
+# is rendered, up to and including extension configuration). Must stay
+# idempotent: never wipe data, run ckan db upgrade when the schema already
+# exists, only rotate the Xloader token (never re-create the sysadmin).
+
+# ---------------------------------------------------------------------------
+# DataStore permissions (mirror the ckan datastore set-permissions pipeline).
+# ---------------------------------------------------------------------------
+- name: Check whether CKAN schema already exists
+  community.postgresql.postgresql_query:
+    login_db: "{{ ckan_db_name }}"
+    login_user: "{{ ckan_db_user }}"
+    login_password: "{{ env_config.ckan_db_password }}"
+    login_host: "{{ ckan_db_host }}"
+    login_port: "{{ ckan_db_port }}"
+    query: >-
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'package'
+  register: ckan_schema_check
+  changed_when: false
+
+- name: Initialise CKAN database (fresh install)
+  command: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} db init"
+  become_user: "{{ ckan_os_user }}"
+  when: (ckan_schema_check.query_result | default([])) | length == 0
+  environment:
+    LANG: ""
+    LC_ALL: ""
+
+- name: Upgrade CKAN database (existing install)
+  command: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} db upgrade"
+  become_user: "{{ ckan_os_user }}"
+  when: (ckan_schema_check.query_result | default([])) | length > 0
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  register: db_upgrade
+  changed_when: "'Running upgrade' in db_upgrade.stdout"
+
+# ---------------------------------------------------------------------------
+# Datastore set-permissions: matches the shell pipeline from entrypoint.sh
+# (awk strips INFO logs, only forwards the SQL, and psql applies it).
+# ---------------------------------------------------------------------------
+- name: Apply datastore permissions
+  shell: |
+    set -euo pipefail
+    su -s /bin/bash {{ ckan_os_user }} -c \
+      "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} datastore set-permissions \
+        | awk 'BEGIN {emit=0} /^\\/\\*/ {emit=1} emit {print}'" \
+      | sudo -u postgres psql -v ON_ERROR_STOP=1 -d postgres
+  args:
+    executable: /bin/bash
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  register: datastore_perms
+  changed_when: true
+
+# ---------------------------------------------------------------------------
+# Sysadmin bootstrap: create if missing, always sync password, ensure sysadmin.
+# ---------------------------------------------------------------------------
+- name: Check if sysadmin user already exists
+  community.postgresql.postgresql_query:
+    login_db: "{{ ckan_db_name }}"
+    login_user: "{{ ckan_db_user }}"
+    login_password: "{{ env_config.ckan_db_password }}"
+    login_host: "{{ ckan_db_host }}"
+    login_port: "{{ ckan_db_port }}"
+    query: >-
+      SELECT 1 FROM "user" WHERE name = %s LIMIT 1
+    positional_args:
+      - "{{ env_config.ckan_bootstrap_sysadmin_name }}"
+  register: sysadmin_exists
+  changed_when: false
+
+- name: Create sysadmin user (first-run only)
+  command: >-
+    {{ ckan_venv }}/bin/ckan -c {{ ckan_ini }}
+    user add {{ env_config.ckan_bootstrap_sysadmin_name }}
+    email={{ env_config.ckan_bootstrap_sysadmin_email }}
+    password={{ env_config.ckan_bootstrap_sysadmin_password }}
+  become_user: "{{ ckan_os_user }}"
+  when: (sysadmin_exists.query_result | default([])) | length == 0
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  no_log: true
+
+- name: Sync sysadmin password to current secret
+  command: >-
+    {{ ckan_venv }}/bin/ckan -c {{ ckan_ini }}
+    user setpass {{ env_config.ckan_bootstrap_sysadmin_name }}
+    -p {{ env_config.ckan_bootstrap_sysadmin_password }}
+  become_user: "{{ ckan_os_user }}"
+  when: (sysadmin_exists.query_result | default([])) | length > 0
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  no_log: true
+  changed_when: false
+
+- name: Promote user to sysadmin (idempotent -- ignore already-sysadmin errors)
+  command: >-
+    {{ ckan_venv }}/bin/ckan -c {{ ckan_ini }}
+    sysadmin add {{ env_config.ckan_bootstrap_sysadmin_name }}
+  become_user: "{{ ckan_os_user }}"
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  failed_when: false
+  changed_when: false
+
+# ---------------------------------------------------------------------------
+# Xloader API token: rotated on every deploy, same as entrypoint.sh.
+# ---------------------------------------------------------------------------
+- name: Copy Xloader token rotation helper to the host
+  copy:
+    src: rotate_xloader_token.sh
+    dest: /usr/local/sbin/fair3r-rotate-xloader-token.sh
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Rotate Xloader API token
+  command: /usr/local/sbin/fair3r-rotate-xloader-token.sh
+  environment:
+    CKAN_INI: "{{ ckan_ini }}"
+    CKAN_VENV_BIN: "{{ ckan_venv }}/bin"
+    CKAN_OS_USER: "{{ ckan_os_user }}"
+    CKAN_DB_HOST: "{{ ckan_db_host }}"
+    CKAN_DB_PORT: "{{ ckan_db_port | string }}"
+    CKAN_DB_USER: "{{ ckan_db_user }}"
+    CKAN_DB_PASSWORD: "{{ env_config.ckan_db_password }}"
+    CKAN_DB_NAME: "{{ ckan_db_name }}"
+    CKAN_BOOTSTRAP_SYSADMIN_NAME: "{{ env_config.ckan_bootstrap_sysadmin_name }}"
+    XLOADER_TOKEN_FILE: "{{ ckan_state_dir }}/xloader.token"
+    LANG: ""
+    LC_ALL: ""
+  changed_when: true
+
+# ---------------------------------------------------------------------------
+# Extension-specific ckan config-tool settings (Fair3R, contact, DOI, pages).
+# Mirrors entrypoint.sh lines 252-277.
+# ---------------------------------------------------------------------------
+- name: Apply Fair3R / contact / DOI / pages config-tool settings
+  command: >-
+    {{ ckan_venv }}/bin/ckan config-tool {{ ckan_ini }} "{{ item }}"
+  loop:
+    - "ckanext.fair3r.context = {{ fair3r_context }}"
+    - "ckanext.fair3r.enable_fdf_integration = {{ env_config.fair3r_enable_fdf_integration }}"
+    - "ckanext.contact.mail_to = {{ env_config.contact_mail }}"
+    - "ckanext.doi.account_name = {{ env_config.doi_account_name }}"
+    - "ckanext.doi.account_password = {{ env_config.doi_account_password }}"
+    - "ckanext.doi.prefix = {{ env_config.doi_prefix }}"
+    - "ckanext.doi.publisher = {{ env_config.doi_publisher }}"
+    - "ckanext.doi.test_mode = {{ env_config.doi_test_mode }}"
+    - "ckanext.doi.site_title = {{ env_config.doi_site_title }}"
+    - "ckanext.pages.organization = True"
+    - "ckanext.pages.group = True"
+    - "ckanext.pages.allow_html = True"
+    - "ckanext.pages.editor = ckeditor"
+  no_log: true
+  changed_when: true
+
+# ---------------------------------------------------------------------------
+# Final DOI + pages migrations (mirror entrypoint.sh).
+# ---------------------------------------------------------------------------
+- name: Initialise DOI extension database
+  command: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} doi initdb"
+  become_user: "{{ ckan_os_user }}"
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  changed_when: false
+
+- name: Upgrade pages extension database
+  command: "{{ ckan_venv }}/bin/ckan --config={{ ckan_ini }} db upgrade -p pages"
+  become_user: "{{ ckan_os_user }}"
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  changed_when: false

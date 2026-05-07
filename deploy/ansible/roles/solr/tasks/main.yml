@@ -1,0 +1,101 @@
+---
+# Install Solr 9 manually (per CKAN 2.11 package install doc, section 3.2),
+# create the 'ckan' core and load CKAN's custom schema.
+
+- name: Check if Solr is already installed
+  stat:
+    path: /opt/solr
+  register: solr_install
+
+- name: Check if Solr tarball already exists on disk
+  stat:
+    path: "/opt/fair3r/solr-{{ solr_version }}.tgz"
+  register: solr_tarball
+  when: not solr_install.stat.exists
+
+- name: Download Solr tarball
+  get_url:
+    url: "https://archive.apache.org/dist/solr/solr/{{ solr_version }}/solr-{{ solr_version }}.tgz"
+    dest: "/opt/fair3r/solr-{{ solr_version }}.tgz"
+    mode: '0644'
+    # Default get_url timeout (10s) is too small for a ~300–400MB archive; the ASF archive is also slow.
+    timeout: 7200
+  when: not solr_install.stat.exists and not solr_tarball.stat.exists
+
+- name: Extract Solr install script
+  command:
+    cmd: "tar xzf /opt/fair3r/solr-{{ solr_version }}.tgz solr-{{ solr_version }}/bin/install_solr_service.sh --strip-components=2"
+    chdir: "/opt/fair3r"
+    creates: "/opt/fair3r/install_solr_service.sh"
+  when: not solr_install.stat.exists
+
+- name: Run Solr install script
+  command:
+    cmd: "bash /opt/fair3r/install_solr_service.sh /opt/fair3r/solr-{{ solr_version }}.tgz -n"
+    creates: /opt/solr
+  when: not solr_install.stat.exists
+
+- name: Ensure Solr service is started and enabled
+  service:
+    name: solr
+    state: started
+    enabled: yes
+
+- name: Check if CKAN Solr core already exists
+  stat:
+    path: "/var/solr/data/{{ solr_core }}/core.properties"
+  register: solr_core_stat
+
+- name: Create CKAN Solr core
+  command:
+    cmd: "/opt/solr/bin/solr create -c {{ solr_core }}"
+  become_user: solr
+  when: not solr_core_stat.stat.exists
+  notify: restart solr
+
+- name: Download CKAN Solr schema
+  get_url:
+    url: "{{ solr_schema_url }}"
+    dest: "/var/solr/data/{{ solr_core }}/conf/managed-schema.xml.ckan"
+    owner: solr
+    group: solr
+    mode: '0644'
+    force: yes
+  notify: restart solr
+
+- name: Install CKAN Solr schema as managed-schema.xml (Solr 9.0+ name)
+  copy:
+    remote_src: yes
+    src: "/var/solr/data/{{ solr_core }}/conf/managed-schema.xml.ckan"
+    dest: "/var/solr/data/{{ solr_core }}/conf/managed-schema.xml"
+    owner: solr
+    group: solr
+    mode: '0644'
+  notify: restart solr
+
+# Remove the stale pre-9.0 file if a previous (broken) deploy left it behind,
+# so there is exactly one schema definition on disk.
+- name: Remove legacy managed-schema (no extension) if present
+  file:
+    path: "/var/solr/data/{{ solr_core }}/conf/managed-schema"
+    state: absent
+  notify: restart solr
+
+# Handlers normally only fire at the end of the play, but ckan_bootstrap
+# runs `ckan db init` mid-play and CKAN refuses to start unless Solr is
+# already serving the new schema. Flush now so the restart happens here.
+- name: Apply pending Solr restart before downstream roles talk to Solr
+  meta: flush_handlers
+
+# `systemctl restart solr` returns as soon as the JVM is launched; the
+# core itself is unreachable for a few seconds after that. Wait until the
+# admin ping reports OK so ckan_bootstrap's `ckan db init` can connect.
+- name: Wait for the CKAN Solr core to be reachable
+  uri:
+    url: "{{ solr_url }}/admin/ping"
+    return_content: false
+    status_code: 200
+  register: solr_ping
+  until: solr_ping.status == 200
+  retries: 30
+  delay: 2

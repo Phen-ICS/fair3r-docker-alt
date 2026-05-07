@@ -19,6 +19,36 @@ wait_for_service() {
   echo "${name} is reachable."
 }
 
+fair3r_gitlab_pypi_install() {
+  local pkg="$1"
+  local token="$2"
+  local host="$3"
+  local proj_id="$4"
+
+  [ -n "$token" ] || return 0
+
+  echo "Installing ${pkg} from GitLab Package Registry (${host}, project ${proj_id})..."
+  local encoded
+  encoded="$(TOKEN="${token}" python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["TOKEN"], safe=""))')"
+  pip install --no-cache-dir --upgrade "${pkg}" \
+    --index-url "https://pypi.org/simple" \
+    --extra-index-url "https://__token__:${encoded}@${host}/api/v4/projects/${proj_id}/packages/pypi/simple"
+}
+
+install_fair3r_extensions_from_gitlab_pypi() {
+  local host="${GITLAB_EXTENSIONS_PYPI_HOST:-}"
+  export PIP_PROGRESS_BAR=off
+
+  fair3r_gitlab_pypi_install "ckanext-fair3r" "${FAIR3R_EXTENSION_PYPI_TOKEN:-}" \
+    "${host}" "${FAIR3R_PYPI_PROJECT_ID:-}"
+  fair3r_gitlab_pypi_install "ckanext-pages" "${PAGE_EXTENSION_PYPI_TOKEN:-}" \
+    "${host}" "${PAGE_PYPI_PROJECT_ID:-}"
+  fair3r_gitlab_pypi_install "ckanext-fair3r-doi" "${DOI_EXTENSION_PYPI_TOKEN:-}" \
+    "${host}" "${DOI_PYPI_PROJECT_ID:-}"
+  fair3r_gitlab_pypi_install "ckanext-plotly" "${PLOTLY_EXTENSION_PYPI_TOKEN:-}" \
+    "${host}" "${PLOTLY_PYPI_PROJECT_ID:-}"
+}
+
 wait_for_service "${CKAN_DB_HOST}" "${CKAN_DB_PORT}" "PostgreSQL"
 wait_for_service "solr" "8983" "Solr"
 wait_for_service "redis" "6379" "Redis"
@@ -39,10 +69,10 @@ chown -R ckan /var/lib/ckan
 chmod 640 "${CKAN_INI}"
 chown ckan "${CKAN_INI}"
 
-# Clone and install plugins EARLY, before any CKAN operations
-# This function clones a plugin from Git if it doesn't exist locally,
-# then installs it in editable mode if it has a Python project file.
+echo "Installing Fair3R CKAN extensions from GitLab Package Registry (skipped if tokens unset in .env)..."
+install_fair3r_extensions_from_gitlab_pypi
 
+# Mounted source trees (DEV): editable installs run after Package Registry installs so local code wins.
 echo "Installing custom CKAN plugins from mounted sources (DEV context only)..."
 
 shopt -s nullglob
@@ -251,9 +281,6 @@ fi
 
 echo "=== Set Fair3R Configuration ==="
 [ -n "$FAIR3R_CONTEXT" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.context = ${FAIR3R_CONTEXT}"
-[ -n "$FAIR3R_FCO_URL" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.fco_url = ${FAIR3R_FCO_URL}"
-[ -n "$FAIR3R_SHARED_SECRET" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.shared_secret = ${FAIR3R_SHARED_SECRET}"
-[ -n "$FAIR3R_ENABLE_FCO_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fco_integration = ${FAIR3R_ENABLE_FCO_INTEGRATION}"
 [ -n "$FAIR3R_ENABLE_FDF_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fdf_integration = ${FAIR3R_ENABLE_FDF_INTEGRATION}"
 
 

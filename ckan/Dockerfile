@@ -1,11 +1,9 @@
-ARG CKAN_VERSION=2.11.4
+ARG CKAN_VERSION=2.11.5
 FROM ckan/ckan-base:${CKAN_VERSION}
 
-# Build args
+#Build args
 ARG FAIR3R_CONTEXT=""
-ARG FAIR3R_EXTENSION_GIT_URL=""
-ARG PAGE_EXTENSION_GIT_URL=""
-ARG DOI_EXTENSION_GIT_URL=""
+
 
 USER root
 
@@ -40,18 +38,14 @@ RUN pip install --no-cache-dir -e "git+https://github.com/NaturalHistoryMuseum/c
 #RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-excelforms.git@main#egg=ckanext-excelforms"
 RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-dsaudit.git@master#egg=ckanext-dsaudit"
 
+
+# WORKAROUND: CKAN 2.11+ build_js_translations() requires an i18n/ directory per enabled plugin; upstream sometimes omits it.
+RUN python3 -c "import pathlib, ckanext.dsaudit; p = pathlib.Path(ckanext.dsaudit.__file__).parent / 'i18n'; p.mkdir(parents=True, exist_ok=True)"
+
 # Dev-only extensions
 RUN if [ "$FAIR3R_CONTEXT" = "DEV" ]; then \
       echo "Installing dev-only extensions..."; \
       pip install --no-cache-dir flask-debugtoolbar==0.16.0; \
-    fi
-
-# Prod-only extensions
-RUN if [ "$FAIR3R_CONTEXT" != "DEV" ]; then \
-      echo "Installing prod-only extensions..."; \
-      [ -n "$FAIR3R_EXTENSION_GIT_URL" ] && pip install --no-cache-dir "$FAIR3R_EXTENSION_GIT_URL" || echo "No FAIR3R URL, skipping"; \
-      [ -n "$PAGE_EXTENSION_GIT_URL" ] && pip install --no-cache-dir "$PAGE_EXTENSION_GIT_URL" || echo "No PAGE URL, skipping"; \
-      [ -n "$DOI_EXTENSION_GIT_URL" ] && pip install --no-cache-dir "$DOI_EXTENSION_GIT_URL" || echo "No DOI URL, skipping"; \
     fi
 
 # Copy configs & scripts

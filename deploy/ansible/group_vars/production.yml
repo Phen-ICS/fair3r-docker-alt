@@ -1,0 +1,12 @@
+---
+# Per-context non-secret values for the production VM (serv-ics-fair3r-p-01).
+# Ansible auto-loads this file for any host in the [production] inventory group.
+
+ckan_site_url: "https://serv-ics-fair3r-p-01.igbmc.u-strasbg.fr"
+contact_mail: "groupe-info-ics@igbmc.fr"
+doi_publisher: "Institut Clinique de la Souris"
+# Live DataCite API on production (`doi_test_mode` disables sandbox).
+doi_test_mode: "false"
+doi_site_title: "Fair3R"
+# Fair3R extension.
+fair3r_enable_fdf_integration: "true"

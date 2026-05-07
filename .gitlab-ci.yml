@@ -1,0 +1,168 @@
+# Fair3R Deploy CI/CD pipeline.
+#
+# - dev: not driven by CI. Developers run `docker compose up -d --build`
+#        locally from the repo root (see root README).
+# - validation / integration / production: deployed by this pipeline as native-package installs on
+#        Ubuntu Noble VMs via deploy/ansible_deploy.py.
+#
+# Mirrors the patterns from /opt/ics-standalone-app-template/.gitlab-ci.yml
+# (.ssh_setup, .deploy_via_ansible, ics-docker runner tag, manual jobs).
+
+stages:
+  - lint
+  - integration
+  - validation
+  - production
+
+# --------------------------------------------------------------------------
+# Reusable anchors
+# --------------------------------------------------------------------------
+
+.ssh_setup: &ssh_setup
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  before_script:
+    - apt update && apt install -y openssh-client
+    - mkdir -p ~/.ssh
+    - cp /mnt/ssh/* ~/.ssh/
+    - chmod 600 ~/.ssh/id_rsa
+    - chmod 644 ~/.ssh/known_hosts
+    - ssh-keyscan $SSH_HOST >> ~/.ssh/known_hosts
+    - pip install ansible 
+  tags:
+    - ics-docker
+
+.deploy_via_ansible: &deploy_via_ansible
+  <<: *ssh_setup
+  timeout: 2h
+  script:
+    - |
+      python3 deploy/ansible_deploy.py \
+        --env "$CONTEXT" \
+        --host "$SSH_HOST" \
+        --ckan-session-secret "$CKAN_SESSION_SECRET" \
+        --ckan-secret-key "$CKAN_SECRET_KEY" \
+        --ckan-app-instance-uuid "$CKAN_APP_INSTANCE_UUID" \
+        --ckan-db-password "$CKAN_DB_PASSWORD" \
+        --ckan-datastore-db-password "$CKAN_DATASTORE_DB_PASSWORD" \
+        --ckan-datastore-readonly-password "$CKAN_DATASTORE_READONLY_PASSWORD" \
+        --ckan-bootstrap-sysadmin-password "$CKAN_BOOTSTRAP_SYSADMIN_PASSWORD" \
+        --fair3r-extension-pypi-token "$FAIR3R_EXTENSION_PYPI_TOKEN" \
+        --page-extension-pypi-token "$PAGE_EXTENSION_PYPI_TOKEN" \
+        --doi-extension-pypi-token "$DOI_EXTENSION_PYPI_TOKEN" \
+        --plotly-extension-pypi-token "$PLOTLY_EXTENSION_PYPI_TOKEN" \
+        --doi-account-name "$DOI_ACCOUNT_NAME" \
+        --doi-account-password "$DOI_ACCOUNT_PASSWORD" \
+        --doi-prefix "$DOI_PREFIX"
+
+# --------------------------------------------------------------------------
+# Lint stage: syntax-check the Ansible playbook.
+# --------------------------------------------------------------------------
+
+ansible_lint:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  before_script:
+    - pip install --no-cache-dir ansible ansible-lint
+  script:
+    # ansible-lint's syntax-check
+    - ansible-lint --profile min deploy/ansible/fair3r_deploy.yml
+  tags:
+    - ics-docker
+
+# --------------------------------------------------------------------------
+# Integration stage: deploy to serv-ics-fair3r-t-01 (manual trigger).
+# --------------------------------------------------------------------------
+
+deploy_integration:
+  stage: integration
+  <<: *deploy_via_ansible
+  variables:
+    SSH_HOST: serv-ics-fair3r-t-01
+    CONTEXT: integration
+    CKAN_SESSION_SECRET: $INTEGRATION_CKAN_SESSION_SECRET
+    CKAN_SECRET_KEY: $INTEGRATION_CKAN_SECRET_KEY
+    CKAN_APP_INSTANCE_UUID: $INTEGRATION_CKAN_APP_INSTANCE_UUID
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $INTEGRATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
+    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
+    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
+    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
+    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
+    DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
+    DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
+    DOI_PREFIX: $SANDBOX_DOI_PREFIX
+  environment:
+    name: integration
+    url: https://fair3r.integration.igbmc.u-strasbg.fr
+  tags:
+    - ics-docker
+
+# --------------------------------------------------------------------------
+# Validation stage: deploy to serv-ics-fair3r-d-01 (manual trigger).
+# --------------------------------------------------------------------------
+
+deploy_validation:
+  stage: validation
+  <<: *deploy_via_ansible
+  variables:
+    SSH_HOST: serv-ics-fair3r-d-01
+    CONTEXT: validation
+    # Per-context secrets (sourced from GitLab CI variables):
+    CKAN_SESSION_SECRET: $VALIDATION_CKAN_SESSION_SECRET
+    CKAN_SECRET_KEY: $VALIDATION_CKAN_SECRET_KEY
+    CKAN_APP_INSTANCE_UUID: $VALIDATION_CKAN_APP_INSTANCE_UUID
+    CKAN_DB_PASSWORD: $VALIDATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $VALIDATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $VALIDATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $VALIDATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
+    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
+    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
+    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
+    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
+    DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
+    DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
+    DOI_PREFIX: $SANDBOX_DOI_PREFIX
+  needs:
+    - deploy_integration
+  environment:
+    name: validation
+    url: https://validation.fair3r.fr
+  tags:
+    - ics-docker
+
+# --------------------------------------------------------------------------
+# Production stage: deploy to serv-ics-fair3r-p-01 (manual; does NOT gate on
+# validation or integration — operators choose when to promote).
+# --------------------------------------------------------------------------
+
+deploy_production:
+  stage: production
+  <<: *deploy_via_ansible
+  variables:
+    SSH_HOST: serv-ics-fair3r-p-01
+    CONTEXT: production
+    # Per-context secrets (sourced from GitLab CI variables):
+    CKAN_SESSION_SECRET: $PRODUCTION_CKAN_SESSION_SECRET
+    CKAN_SECRET_KEY: $PRODUCTION_CKAN_SECRET_KEY
+    CKAN_APP_INSTANCE_UUID: $PRODUCTION_CKAN_APP_INSTANCE_UUID
+    CKAN_DB_PASSWORD: $PRODUCTION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $PRODUCTION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $PRODUCTION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $PRODUCTION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
+    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
+    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
+    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
+    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
+    DOI_ACCOUNT_NAME: $PRODUCTION_DOI_ACCOUNT_NAME
+    DOI_ACCOUNT_PASSWORD: $PRODUCTION_DOI_ACCOUNT_PASSWORD
+    DOI_PREFIX: $PRODUCTION_DOI_PREFIX
+  when: manual
+  needs:
+    - deploy_validation
+  environment:
+    name: production
+    url: https://serv-ics-fair3r-p-01.igbmc.u-strasbg.fr
+  tags:
+    - ics-docker

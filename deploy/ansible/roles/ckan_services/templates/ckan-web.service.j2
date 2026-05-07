@@ -1,0 +1,21 @@
+[Unit]
+Description=Fair3R CKAN web application ({{ fair3r_context }})
+After=network.target postgresql.service redis-server.service solr.service
+Wants=postgresql.service redis-server.service solr.service
+
+[Service]
+Type=simple
+User={{ ckan_os_user }}
+Group={{ ckan_os_user }}
+WorkingDirectory={{ ckan_config_dir }}
+Environment=LANG=
+Environment=LC_ALL=
+# Same stack as packaged supervisor `ckan-uwsgi`
+ExecStart={{ ckan_venv }}/bin/uwsgi --ini {{ ckan_uwsgi_ini }}
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

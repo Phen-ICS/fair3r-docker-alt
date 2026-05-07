@@ -1,0 +1,72 @@
+---
+# Render /etc/ckan/default/ckan.ini from the repository's authoritative
+# template (ckan/config/ckan.ini.template) using envsubst -- exactly the
+# same mechanism ckan/scripts/entrypoint.sh uses inside the container.
+
+- name: Copy ckan.ini.template to the remote host
+  copy:
+    src: "../../ckan/config/ckan.ini.template"
+    dest: "{{ ckan_ini_template }}"
+    owner: root
+    group: "{{ ckan_os_user }}"
+    mode: '0640'
+
+- name: Render ckan.ini with envsubst
+  shell: |
+    set -euo pipefail
+    envsubst < "{{ ckan_ini_template }}" > "{{ ckan_ini }}.new"
+    if [ ! -f "{{ ckan_ini }}" ] || ! cmp -s "{{ ckan_ini }}.new" "{{ ckan_ini }}"; then
+      mv "{{ ckan_ini }}.new" "{{ ckan_ini }}"
+      echo CHANGED
+    else
+      rm -f "{{ ckan_ini }}.new"
+      echo UNCHANGED
+    fi
+  args:
+    executable: /bin/bash
+  environment:
+    CKAN_DEBUG: "false"
+    CKAN_DB_USER: "{{ ckan_db_user }}"
+    CKAN_DB_PASSWORD: "{{ env_config.ckan_db_password }}"
+    CKAN_DB_HOST: "{{ ckan_db_host }}"
+    CKAN_DB_PORT: "{{ ckan_db_port }}"
+    CKAN_DB_NAME: "{{ ckan_db_name }}"
+    CKAN_SOLR_URL: "{{ solr_url }}"
+    CKAN_REDIS_URL: "{{ redis_url }}"
+    CKAN_SITE_URL: "{{ env_config.ckan_site_url }}"
+    CKAN_SESSION_SECRET: "{{ env_config.ckan_session_secret }}"
+    CKAN_SECRET_KEY: "{{ env_config.ckan_secret_key }}"
+    CKAN_APP_INSTANCE_UUID: "{{ env_config.ckan_app_instance_uuid }}"
+    CKAN_DATASTORE_DB_USER: "{{ ckan_datastore_db_user }}"
+    CKAN_DATASTORE_DB_PASSWORD: "{{ env_config.ckan_datastore_db_password }}"
+    CKAN_DATASTORE_DB_NAME: "{{ ckan_datastore_db_name }}"
+    CKAN_DATASTORE_READONLY_USER: "{{ ckan_datastore_readonly_user }}"
+    CKAN_DATASTORE_READONLY_PASSWORD: "{{ env_config.ckan_datastore_readonly_password }}"
+    CKAN_XLOADER_JOBS_DB_URI: "postgresql://{{ ckan_db_user }}:{{ env_config.ckan_db_password }}@{{ ckan_db_host }}:{{ ckan_db_port }}/{{ ckan_db_name }}"
+    CKAN_INTERNAL_SITE_URL: "{{ ckan_internal_site_url }}"
+    CKAN_EXTRA_PLUGINS: "{{ ckan_extra_plugins }}"
+    CKAN_EXTRA_VIEWS: "{{ ckan_extra_views }}"
+  register: ckan_ini_render
+  changed_when: "'CHANGED' in ckan_ini_render.stdout"
+  # ckan.site_url and other settings are read at process start; without a
+  # restart, redirects and status_show keep the old public URL.
+  notify: restart ckan-web and worker after ckan.ini change
+  no_log: true
+
+- name: Set ownership and permissions on ckan.ini
+  file:
+    path: "{{ ckan_ini }}"
+    owner: "{{ ckan_os_user }}"
+    group: "{{ ckan_os_user }}"
+    mode: '0640'
+
+- name: Ensure who.ini exists (copy from ckan package default)
+  copy:
+    remote_src: yes
+    src: "{{ ckan_venv }}/src/ckan/who.ini"
+    dest: "{{ ckan_config_dir }}/who.ini"
+    owner: "{{ ckan_os_user }}"
+    group: "{{ ckan_os_user }}"
+    mode: '0640'
+    force: no
+  failed_when: false

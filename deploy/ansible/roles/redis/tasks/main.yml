@@ -1,0 +1,31 @@
+---
+# Install redis-server with default config bound to loopback.
+
+- name: Install redis-server
+  apt:
+    name: redis-server
+    state: present
+    update_cache: yes
+  notify: restart redis
+
+- name: Ensure redis listens on loopback
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^\s*bind\s+'
+    line: 'bind 127.0.0.1 ::1'
+    state: present
+  notify: restart redis
+
+- name: Ensure redis AOF persistence is enabled
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^\s*appendonly\s+'
+    line: 'appendonly yes'
+    state: present
+  notify: restart redis
+
+- name: Ensure redis service is started and enabled
+  service:
+    name: redis-server
+    state: started
+    enabled: yes
