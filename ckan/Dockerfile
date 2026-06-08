@@ -1,5 +1,5 @@
 ARG CKAN_VERSION=2.11.5
-FROM ckan/ckan-base:${CKAN_VERSION}
+FROM serv-gitlab.igbmc.u-strasbg.fr:5050/ics/ckan-docker-base/ckan-base:${CKAN_VERSION}
 
 #Build args
 ARG FAIR3R_CONTEXT=""
@@ -31,12 +31,8 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
       exit 1; \
     fi
 
-# Extensions toujours installées
-RUN pip install --no-cache-dir ckanext-xloader==2.3.0 chardet==4.0.0 tabulator==1.53.5 unidecode==1.4.0
-RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-pdfview.git@master#egg=ckanext-pdfview"
-RUN pip install --no-cache-dir -e "git+https://github.com/NaturalHistoryMuseum/ckanext-contact.git@main#egg=ckanext-contact"
-#RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-excelforms.git@main#egg=ckanext-excelforms"
-RUN pip install --no-cache-dir -e "git+https://github.com/ckan/ckanext-dsaudit.git@master#egg=ckanext-dsaudit"
+COPY requirements.txt dev-requirements.txt /srv/app/
+RUN pip install --no-cache-dir --no-deps -r /srv/app/requirements.txt
 
 
 # WORKAROUND: CKAN 2.11+ build_js_translations() requires an i18n/ directory per enabled plugin; upstream sometimes omits it.
@@ -45,7 +41,7 @@ RUN python3 -c "import pathlib, ckanext.dsaudit; p = pathlib.Path(ckanext.dsaudi
 # Dev-only extensions
 RUN if [ "$FAIR3R_CONTEXT" = "DEV" ]; then \
       echo "Installing dev-only extensions..."; \
-      pip install --no-cache-dir flask-debugtoolbar==0.16.0; \
+      pip install --no-cache-dir --no-deps -r /srv/app/dev-requirements.txt; \
     fi
 
 # Copy configs & scripts

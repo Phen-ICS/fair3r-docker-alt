@@ -4,37 +4,28 @@
 # Matches docker-compose CKAN entrypoint Fair3R install: GitLab Package Registry PyPI URLs with
 # per-extension tokens (see ansible/group_vars/all.yml → ckan_extensions_gitlab_pypi_project_ids).
 
-- name: Install pinned extension dependencies (xloader + helpers)
-  pip:
-    name:
-      - "ckanext-xloader==2.3.0"
-      - "chardet==4.0.0"
-      - "tabulator==1.53.5"
-      - "unidecode==1.4.0"
-    virtualenv: "{{ ckan_venv }}"
-    state: present
+- name: Copy common CKAN requirements
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../ckan/requirements.txt"
+    dest: "{{ ckan_common_requirements_file }}"
+    owner: root
+    group: root
+    mode: "0644"
 
-- name: Install open-source CKAN extensions (pdfview, contact, dsaudit)
-  pip:
-    name: "{{ item }}"
+- name: Install common CKAN requirements
+  ansible.builtin.pip:
+    requirements: "{{ ckan_common_requirements_file }}"
     virtualenv: "{{ ckan_venv }}"
-    state: latest
-  loop:
-    - "git+https://github.com/ckan/ckanext-pdfview.git@master#egg=ckanext-pdfview"
-    - "git+https://github.com/NaturalHistoryMuseum/ckanext-contact.git@main#egg=ckanext-contact"
-    - "git+https://github.com/ckan/ckanext-dsaudit.git@master#egg=ckanext-dsaudit"
+    extra_args: "--no-deps"
 
 # Fair3R forks: wheels from GitLab Package Registry (PyPI API).
 # Project IDs: in ansible/group_vars/all.yml.
 - name: Install Fair3R CKAN extensions from GitLab Package Registry (PyPI)
-  pip:
+  ansible.builtin.pip:
     name: "{{ item.key }}"
     virtualenv: "{{ ckan_venv }}"
     state: latest
-    extra_args: >-
-      --upgrade
-      --index-url https://pypi.org/simple
-      --extra-index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple
+    extra_args: "--upgrade --no-deps --index-url https://pypi.org/simple --extra-index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
   loop: "{{ ckan_extensions_gitlab_pypi_project_ids | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
@@ -48,7 +39,7 @@
 # crashes with FileNotFoundError if the directory is missing — systemd then
 # restarts ckan-web until verification times out (connection refused).
 - name: Resolve ckanext-dsaudit install path
-  command:
+  ansible.builtin.command:
     argv:
       - "{{ ckan_venv }}/bin/python"
       - -c
@@ -57,7 +48,7 @@
   changed_when: false
 
 - name: Ensure ckanext-dsaudit i18n directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ dsaudit_pkg_dir.stdout | trim }}/i18n"
     state: directory
     mode: "0755"

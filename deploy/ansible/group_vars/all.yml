@@ -18,6 +18,7 @@ ckan_ini_template: "/etc/ckan/default/ckan.ini.template"
 ckan_storage_path: "/var/lib/ckan/storage"
 ckan_state_dir: "/var/lib/ckan"
 ckan_os_user: "ckan"
+ckan_common_requirements_file: "/opt/fair3r/ckan-requirements.txt"
 
 # Ports. CKAN web binds to loopback, nginx is the only public-facing listener.
 ckan_web_host: "127.0.0.1"

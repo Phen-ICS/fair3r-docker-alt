@@ -124,6 +124,7 @@ deploy_validation:
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
+  when: manual
   needs:
     - deploy_integration
   environment:
