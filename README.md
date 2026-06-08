@@ -258,5 +258,5 @@ and the post-deploy QA checklist.
 
 ### Important note :
 
-DEV environnement is using python 3.10.19 (because of docker ckan-base:2.11.5)
-Validation and production will be using 3.12 python, because we cannot get ubuntu 22 VMs from IT. This remains a major difference between environments.
+DEV environnement is using python 3.12.13 (because of docker ckan-base:2.11.5 that is using a python 3.12.13 trixie image)
+Validation and production will be using 3.12.3 python, because we cannot get ubuntu 22 VMs from IT and because Ubuntu LTS usually stays on the patch level they shipped without jumping to the latest upstream micro release like 3.12.13. This remains a minor difference between environments.

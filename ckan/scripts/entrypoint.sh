@@ -30,7 +30,7 @@ fair3r_gitlab_pypi_install() {
   echo "Installing ${pkg} from GitLab Package Registry (${host}, project ${proj_id})..."
   local encoded
   encoded="$(TOKEN="${token}" python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["TOKEN"], safe=""))')"
-  pip install --no-cache-dir --upgrade "${pkg}" \
+  pip install --no-cache-dir --upgrade --no-deps "${pkg}" \
     --index-url "https://pypi.org/simple" \
     --extra-index-url "https://__token__:${encoded}@${host}/api/v4/projects/${proj_id}/packages/pypi/simple"
 }
@@ -92,7 +92,7 @@ if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
     # Install the plugin in editable mode if it has a Python project file
     if [ -f "$plugin_dir/setup.py" ] || [ -f "$plugin_dir/pyproject.toml" ]; then
       echo "Installing plugin (dev mode): ${plugin_name}"
-      pip install -e "$plugin_dir"
+      pip install --no-deps -e "$plugin_dir"
     else
       echo "Skipping ${plugin_name} (not a Python project)"
     fi

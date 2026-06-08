@@ -36,12 +36,18 @@
   changed_when: false
   failed_when: nginx_status.stdout.strip() != "active"
 
+- name: Get CKAN Python version
+  shell: "{{ ckan_venv }}/bin/python --version 2>&1"
+  register: ckan_python_version
+  changed_when: false
+
 - name: Print deployment summary
   debug:
     msg:
       - "Fair3R CKAN deployed on {{ inventory_hostname }}"
       - "Context:            {{ fair3r_context }}"
       - "CKAN version:       {{ status_show.json.result.ckan_version | default('?') }}"
+      - "Python version:     {{ ckan_python_version.stdout | trim }}"
       - "Site title:         {{ status_show.json.result.site_title | default('?') }}"
       - "Site URL:           {{ env_config.ckan_site_url }}"
       - "ckan-web systemd:   {{ ckan_web_status.stdout.strip() }}"
