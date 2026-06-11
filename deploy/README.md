@@ -20,6 +20,7 @@ for background.
 ```
 deploy/
 ├── ansible_deploy.py             # CLI wrapper -> ansible-playbook
+├── ckanext_test.py               # CLI wrapper -> remote pytest on integration VM for our custom ckan extensions
 ├── nginx_validation.conf         # HTTP :80 to CKAN (see file header; TLS upstream)
 ├── nginx_integration.conf        # same pattern as validation for integration VM
 ├── nginx_production.conf         # same pattern + optional proxy_cache
@@ -157,6 +158,31 @@ the command line.)
 
 Add `--check` for a dry-run (adds `--check --diff` to the underlying
 `ansible-playbook` invocation).
+
+## Integration test jobs (`deploy/ckanext_test.py`)
+
+After `deploy_integration`, the `test:integration:*` jobs SSH to the same VM,
+run each extension's pytest suite with the **test.ini shipped in the installed
+package**, and copy the JUnit XML back to the runner. GitLab CI uses the
+`.ckanext_test` anchor (mirroring `.deploy_via_ansible`): the anchor runs
+`python3 deploy/ckanext_test.py`; each job supplies host secrets and
+extension-specific variables (`CKAN_TESTS_MODULE`, report paths, optional
+`CKANEXT_TEST_EXPORT_DB_SOLR_ENV` / `CKANEXT_TEST_DEBUG_TEST_INI`).
+
+Example (pages — no DB/Solr env exports):
+
+```bash
+python3 deploy/ckanext_test.py \
+  --host serv-ics-fair3r-t-01 \
+  --ckan-db-password "$INTEGRATION_CKAN_DB_PASSWORD" \
+  --ckan-datastore-db-password "$INTEGRATION_CKAN_DATASTORE_DB_PASSWORD" \
+  --ckan-datastore-readonly-password "$INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD" \
+  --tests-module ckanext.pages.tests \
+  --remote-report /tmp/pages-report.xml \
+  --local-report report-pages.xml
+```
+
+Fair3r, plotly and doi additionally passes `--export-db-solr-env`
 
 ## Manual QA checklist
 
