@@ -25,13 +25,36 @@
     name: "{{ item.key }}"
     virtualenv: "{{ ckan_venv }}"
     state: latest
-    extra_args: "--upgrade --no-deps --index-url https://pypi.org/simple --extra-index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
+    extra_args: "--no-cache-dir --force-reinstall --no-deps --index-url https://pypi.org/simple --extra-index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
   loop: "{{ ckan_extensions_gitlab_pypi_project_ids | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
   environment:
     PIP_PROGRESS_BAR: "off"
+  changed_when: true
   no_log: true
+
+- name: Read installed versions of Fair3R CKAN extensions
+  command:
+    argv:
+      - "{{ ckan_venv }}/bin/python"
+      - -c
+      - |
+        from importlib.metadata import version
+        packages = [
+            "ckanext-fair3r",
+            "ckanext-pages",
+            "ckanext-fair3r-doi",
+            "ckanext-plotly",
+        ]
+        for package in packages:
+            print(f"{package}=={version(package)}")
+  register: fair3r_extensions_versions
+  changed_when: false
+
+- name: Print installed versions of Fair3R CKAN extensions
+  debug:
+    msg: "{{ fair3r_extensions_versions.stdout_lines }}"
 
 # ckanext-dsaudit is loaded from git; the tree often has no i18n/ directory in
 # the installed wheel/sdist layout.  CKAN 2.11's `ckan run` calls

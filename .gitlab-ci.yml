@@ -6,11 +6,12 @@
 #        Ubuntu Noble VMs via deploy/ansible_deploy.py.
 #
 # Mirrors the patterns from /opt/ics-standalone-app-template/.gitlab-ci.yml
-# (.ssh_setup, .deploy_via_ansible, ics-docker runner tag, manual jobs).
+# (.ssh_setup, .deploy_via_ansible, .ckanext_test, ics-docker runner tag, manual jobs).
 
 stages:
   - lint
   - integration
+  - test
   - validation
   - production
 
@@ -53,6 +54,25 @@ stages:
         --doi-account-name "$DOI_ACCOUNT_NAME" \
         --doi-account-password "$DOI_ACCOUNT_PASSWORD" \
         --doi-prefix "$DOI_PREFIX"
+
+.ckanext_test: &ckanext_test
+  <<: *ssh_setup
+  stage: test
+  needs:
+    - deploy_integration
+  environment:
+    name: integration
+  script:
+    - |
+      python3 deploy/ckanext_test.py \
+        --host "$SSH_HOST" \
+        --ckan-db-password "$CKAN_DB_PASSWORD" \
+        --ckan-datastore-db-password "$CKAN_DATASTORE_DB_PASSWORD" \
+        --ckan-datastore-readonly-password "$CKAN_DATASTORE_READONLY_PASSWORD" \
+        --tests-module "$CKAN_TESTS_MODULE" \
+        --remote-report "$CKAN_REMOTE_REPORT" \
+        --local-report "$CKAN_LOCAL_REPORT" \
+        --export-db-solr-env "${CKANEXT_TEST_EXPORT_DB_SOLR_ENV:-None}"
 
 # --------------------------------------------------------------------------
 # Lint stage: syntax-check the Ansible playbook.
@@ -100,6 +120,82 @@ deploy_integration:
     - ics-docker
 
 # --------------------------------------------------------------------------
+# Test stage: run ckanext pytest suites on the deployed integration server
+# via deploy/ckanext_test.py (see .ckanext_test anchor).
+# --------------------------------------------------------------------------
+
+test:integration:fair3r:
+  <<: *ckanext_test
+  variables:
+    SSH_HOST: serv-ics-fair3r-t-01
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_TESTS_MODULE: ckanext.fair3r.tests
+    CKAN_REMOTE_REPORT: /tmp/fair3r-report.xml
+    CKAN_LOCAL_REPORT: report-integration.xml
+    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
+  artifacts:
+    when: always
+    reports:
+      junit: report-integration.xml
+    paths:
+      - report-integration.xml
+
+test:integration:doi:
+  <<: *ckanext_test
+  variables:
+    SSH_HOST: serv-ics-fair3r-t-01
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_TESTS_MODULE: ckanext.doi.tests
+    CKAN_REMOTE_REPORT: /tmp/doi-report.xml
+    CKAN_LOCAL_REPORT: report-doi.xml
+    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
+  artifacts:
+    when: always
+    reports:
+      junit: report-doi.xml
+    paths:
+      - report-doi.xml
+
+test:integration:pages:
+  <<: *ckanext_test
+  variables:
+    SSH_HOST: serv-ics-fair3r-t-01
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_TESTS_MODULE: ckanext.pages.tests
+    CKAN_REMOTE_REPORT: /tmp/pages-report.xml
+    CKAN_LOCAL_REPORT: report-pages.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-pages.xml
+    paths:
+      - report-pages.xml
+
+test:integration:plotly:
+  <<: *ckanext_test
+  variables:
+    SSH_HOST: serv-ics-fair3r-t-01
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_TESTS_MODULE: ckanext.plotly.tests
+    CKAN_REMOTE_REPORT: /tmp/plotly-report.xml
+    CKAN_LOCAL_REPORT: report-plotly.xml
+    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
+  artifacts:
+    when: always
+    reports:
+      junit: report-plotly.xml
+    paths:
+      - report-plotly.xml
+
+# --------------------------------------------------------------------------
 # Validation stage: deploy to serv-ics-fair3r-d-01 (manual trigger).
 # --------------------------------------------------------------------------
 
@@ -126,7 +222,17 @@ deploy_validation:
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
   when: manual
   needs:
-    - deploy_integration
+    - job: deploy_integration
+      optional: true
+    - job: test:integration:fair3r
+      optional: true
+    - job: test:integration:doi
+      optional: true
+    - job: test:integration:pages
+      optional: true
+    - job: test:integration:plotly
+      optional: true
+  when: manual
   environment:
     name: validation
     url: https://validation.fair3r.fr
