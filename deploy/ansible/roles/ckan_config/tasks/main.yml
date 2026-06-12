@@ -46,6 +46,15 @@
     CKAN_INTERNAL_SITE_URL: "{{ ckan_internal_site_url }}"
     CKAN_EXTRA_PLUGINS: "{{ ckan_extra_plugins }}"
     CKAN_EXTRA_VIEWS: "{{ ckan_extra_views }}"
+    CKAN_EMAIL_SMTP_SERVER: "{{ env_config.ckan_email_smtp_server }}"
+    CKAN_EMAIL_SMTP_STARTTLS: "{{ env_config.ckan_email_smtp_starttls }}"
+    CKAN_EMAIL_SMTP_STARTTLS_VERIFY: "{{ env_config.ckan_email_smtp_starttls_verify }}"
+    CKAN_EMAIL_SMTP_USER: "{{ env_config.ckan_email_smtp_user }}"
+    CKAN_EMAIL_SMTP_PASSWORD: "{{ env_config.ckan_email_smtp_password }}"
+    CKAN_EMAIL_SMTP_MAIL_FROM: "{{ env_config.ckan_email_smtp_mail_from }}"
+    CKAN_EMAIL_SMTP_REPLY_TO: "{{ env_config.ckan_email_smtp_reply_to }}"
+    CKAN_EMAIL_SMTP_EMAIL_TO: "{{ env_config.ckan_email_smtp_email_to }}"
+    CKAN_EMAIL_SMTP_ERROR_EMAIL_FROM: "{{ env_config.ckan_email_smtp_error_email_from }}"
   register: ckan_ini_render
   changed_when: "'CHANGED' in ckan_ini_render.stdout"
   # ckan.site_url and other settings are read at process start; without a

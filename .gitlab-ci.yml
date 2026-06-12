@@ -53,7 +53,8 @@ stages:
         --plotly-extension-pypi-token "$PLOTLY_EXTENSION_PYPI_TOKEN" \
         --doi-account-name "$DOI_ACCOUNT_NAME" \
         --doi-account-password "$DOI_ACCOUNT_PASSWORD" \
-        --doi-prefix "$DOI_PREFIX"
+        --doi-prefix "$DOI_PREFIX" \
+        --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD"
 
 .ckanext_test: &ckanext_test
   <<: *ssh_setup
@@ -113,6 +114,7 @@ deploy_integration:
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
+    CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
   environment:
     name: integration
     url: https://fair3r.integration.igbmc.u-strasbg.fr
@@ -220,6 +222,7 @@ deploy_validation:
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
+    CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
   when: manual
   needs:
     - job: deploy_integration
@@ -265,6 +268,7 @@ deploy_production:
     DOI_ACCOUNT_NAME: $PRODUCTION_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $PRODUCTION_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $PRODUCTION_DOI_PREFIX
+    CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
   when: manual
   needs:
     - deploy_validation

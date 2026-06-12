@@ -67,3 +67,14 @@ ckan_extensions_gitlab_pypi_project_ids:
   "ckanext-pages": 863
   "ckanext-fair3r-doi": 860
   "ckanext-plotly": 891
+
+# Email SMTP settings
+ckan_email_smtp_server : smtp.igbmc.u-strasbg.fr:587
+ckan_email_smtp_port: 587
+ckan_email_smtp_starttls: true
+ckan_email_smtp_starttls_verify: false
+ckan_email_smtp_user: ics-no-reply@igbmc.fr
+ckan_email_smtp_mail_from: ics-no-reply@igbmc.fr
+ckan_email_smtp_reply_to: no-reply@fair3r.fr
+ckan_email_smtp_email_to:
+ckan_email_smtp_error_email_from:

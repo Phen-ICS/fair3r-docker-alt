@@ -42,6 +42,7 @@
           ckan_datastore_db_password: "{{ lookup('vars', context + '_ckan_datastore_db_password') }}"
           ckan_datastore_readonly_password: "{{ lookup('vars', context + '_ckan_datastore_readonly_password') }}"
           ckan_bootstrap_sysadmin_password: "{{ lookup('vars', context + '_ckan_bootstrap_sysadmin_password') }}"
+          ckan_email_smtp_password: "{{ ckan_email_smtp_password }}"
 
           # GitLab Package Registry PyPI: one deploy token or PAT per extension
           # project (read_package / read_api as required by your GitLab policy).
@@ -55,6 +56,16 @@
           doi_account_name: "{{ lookup('vars', context + '_doi_account_name') }}"
           doi_account_password: "{{ lookup('vars', context + '_doi_account_password') }}"
           doi_prefix: "{{ lookup('vars', context + '_doi_prefix') }}"
+
+          # email SMTP settings (per-context secrets and non-secrets).
+          ckan_email_smtp_server: "{{ ckan_email_smtp_server }}"
+          ckan_email_smtp_starttls: "{{ ckan_email_smtp_starttls }}"
+          ckan_email_smtp_starttls_verify: "{{ ckan_email_smtp_starttls_verify }}"
+          ckan_email_smtp_user: "{{ ckan_email_smtp_user }}"
+          ckan_email_smtp_mail_from: "{{ ckan_email_smtp_mail_from }}"
+          ckan_email_smtp_reply_to: "{{ ckan_email_smtp_reply_to }}"
+          ckan_email_smtp_email_to: "{{ ckan_email_smtp_email_to }}"
+          ckan_email_smtp_error_email_from: "{{ ckan_email_smtp_error_email_from }}"
 
           # ------- Per-context non-secrets (from group_vars/<context>.yml) -------
           ckan_site_url: "{{ ckan_site_url }}"

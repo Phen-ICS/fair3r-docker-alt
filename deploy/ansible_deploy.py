@@ -47,6 +47,7 @@ CONTEXT_SCOPED = (
 # for values that otherwise come from group_vars/all.yml.
 PLAIN_PASSTHROUGH = (
     "ckan_deb_url",
+    "ckan_email_smtp_password",
 )
 
 

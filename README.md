@@ -158,6 +158,8 @@ docker compose logs -f ckan
 
 ## 6) Create a sysadmin user
 
+
+### In DEV :
 Use the helper script:
 
 ```bash
@@ -169,6 +171,12 @@ Or use automatic bootstrap at startup by setting in `.env`:
 - `CKAN_BOOTSTRAP_SYSADMIN_NAME`
 - `CKAN_BOOTSTRAP_SYSADMIN_EMAIL`
 - `CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`
+
+### In integration, validation or production:
+
+```bash
+sudo ckan -c /etc/ckan/default/ckan.ini sysadmin add admin email=admin@example.com name=admin
+```
 
 ## 7) Notes
 
