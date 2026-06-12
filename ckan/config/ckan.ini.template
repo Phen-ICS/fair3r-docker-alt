@@ -31,6 +31,16 @@ ckanext.xloader.formats = csv application/csv
 
 ckan.views.default_views = image_view datatables_view text_view pdf_view ${CKAN_EXTRA_VIEWS}
 
+smtp.server = ${CKAN_EMAIL_SMTP_SERVER}
+smtp.starttls = ${CKAN_EMAIL_SMTP_STARTTLS}
+smtp.starttls_verify = ${CKAN_EMAIL_SMTP_STARTTLS_VERIFY}
+smtp.user = ${CKAN_EMAIL_SMTP_USER}
+smtp.password = ${CKAN_EMAIL_SMTP_PASSWORD}
+smtp.mail_from = ${CKAN_EMAIL_SMTP_MAIL_FROM}
+smtp.reply_to = ${CKAN_EMAIL_SMTP_REPLY_TO}
+email_to = ${CKAN_EMAIL_SMTP_EMAIL_TO}
+error_email_from = ${CKAN_EMAIL_SMTP_ERROR_EMAIL_FROM}
+
 [server:main]
 use = egg:waitress#main
 host = 0.0.0.0
