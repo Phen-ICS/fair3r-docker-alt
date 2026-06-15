@@ -60,6 +60,8 @@ def _remote_shell(args: argparse.Namespace) -> str:
     mod = args.tests_module
     lines = [
         "set -e",
+        f'export CKAN_DB_HOST="127.0.0.1"',
+        f'export CKAN_DB_PORT="5432"',
         f'export CKAN_DB_PASSWORD={shlex.quote(args.ckan_db_password)}',
         f'export CKAN_DATASTORE_DB_PASSWORD={shlex.quote(args.ckan_datastore_db_password)}',
         f'export CKAN_DATASTORE_READONLY_PASSWORD={shlex.quote(args.ckan_datastore_readonly_password)}',
@@ -67,8 +69,6 @@ def _remote_shell(args: argparse.Namespace) -> str:
     if _flag_enabled(args.export_db_solr_env):
         lines.extend(
             [
-                'export CKAN_DB_HOST="127.0.0.1"',
-                'export CKAN_DB_PORT="5432"',
                 'export CKAN_SOLR_URL="http://127.0.0.1:8983/solr/ckan"',
             ]
         )
