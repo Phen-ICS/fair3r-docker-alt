@@ -166,8 +166,7 @@ run each extension's pytest suite with the **test.ini shipped in the installed
 package**, and copy the JUnit XML back to the runner. GitLab CI uses the
 `.ckanext_test` anchor (mirroring `.deploy_via_ansible`): the anchor runs
 `python3 deploy/ckanext_test.py`; each job supplies host secrets and
-extension-specific variables (`CKAN_TESTS_MODULE`, report paths, optional
-`CKANEXT_TEST_EXPORT_DB_SOLR_ENV` / `CKANEXT_TEST_DEBUG_TEST_INI`).
+extension-specific variables (`CKAN_TESTS_MODULE`, report paths).
 
 Example (pages — no DB/Solr env exports):
 
@@ -181,8 +180,6 @@ python3 deploy/ckanext_test.py \
   --remote-report /tmp/pages-report.xml \
   --local-report report-pages.xml
 ```
-
-Fair3r, plotly and doi additionally passes `--export-db-solr-env`
 
 ## Manual QA checklist
 

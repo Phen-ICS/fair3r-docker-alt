@@ -72,8 +72,7 @@ stages:
         --ckan-datastore-readonly-password "$CKAN_DATASTORE_READONLY_PASSWORD" \
         --tests-module "$CKAN_TESTS_MODULE" \
         --remote-report "$CKAN_REMOTE_REPORT" \
-        --local-report "$CKAN_LOCAL_REPORT" \
-        --export-db-solr-env "${CKANEXT_TEST_EXPORT_DB_SOLR_ENV:-None}"
+        --local-report "$CKAN_LOCAL_REPORT"
 
 # --------------------------------------------------------------------------
 # Lint stage: syntax-check the Ansible playbook.
@@ -136,7 +135,6 @@ test:integration:fair3r:
     CKAN_TESTS_MODULE: ckanext.fair3r.tests
     CKAN_REMOTE_REPORT: /tmp/fair3r-report.xml
     CKAN_LOCAL_REPORT: report-integration.xml
-    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
   artifacts:
     when: always
     reports:
@@ -154,7 +152,6 @@ test:integration:doi:
     CKAN_TESTS_MODULE: ckanext.doi.tests
     CKAN_REMOTE_REPORT: /tmp/doi-report.xml
     CKAN_LOCAL_REPORT: report-doi.xml
-    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
   artifacts:
     when: always
     reports:
@@ -189,7 +186,6 @@ test:integration:plotly:
     CKAN_TESTS_MODULE: ckanext.plotly.tests
     CKAN_REMOTE_REPORT: /tmp/plotly-report.xml
     CKAN_LOCAL_REPORT: report-plotly.xml
-    CKANEXT_TEST_EXPORT_DB_SOLR_ENV: enabled
   artifacts:
     when: always
     reports:
@@ -223,7 +219,6 @@ deploy_validation:
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
-  when: manual
   needs:
     - job: deploy_integration
       optional: true
