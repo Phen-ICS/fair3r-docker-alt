@@ -42,18 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Local path where the JUnit XML is copied after the run.",
     )
-    parser.add_argument(
-        "--export-db-solr-env",
-        default="None",
-        help='Export CKAN_DB_HOST/PORT and CKAN_SOLR_URL before pytest. Ignored when "None".',
-    )
     return parser
-
-
-def _flag_enabled(value: str | None) -> bool:
-    if value is None:
-        return False
-    return value.strip().lower() not in ("", "none")
 
 
 def _remote_shell(args: argparse.Namespace) -> str:
@@ -63,15 +52,10 @@ def _remote_shell(args: argparse.Namespace) -> str:
         f'export CKAN_DB_PASSWORD={shlex.quote(args.ckan_db_password)}',
         f'export CKAN_DATASTORE_DB_PASSWORD={shlex.quote(args.ckan_datastore_db_password)}',
         f'export CKAN_DATASTORE_READONLY_PASSWORD={shlex.quote(args.ckan_datastore_readonly_password)}',
+        'export CKAN_DB_HOST="127.0.0.1"',
+        'export CKAN_DB_PORT="5432"',
+        'export CKAN_SOLR_URL="http://127.0.0.1:8983/solr/ckan"',
     ]
-    if _flag_enabled(args.export_db_solr_env):
-        lines.extend(
-            [
-                'export CKAN_DB_HOST="127.0.0.1"',
-                'export CKAN_DB_PORT="5432"',
-                'export CKAN_SOLR_URL="http://127.0.0.1:8983/solr/ckan"',
-            ]
-        )
 
     lines.extend(
         [
