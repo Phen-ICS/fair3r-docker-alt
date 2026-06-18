@@ -194,7 +194,7 @@ Fair3R runs in four deployment contexts (`dev` plus three native VMs):
 | `dev`          | Developer workstation, Docker Compose stack (the sections above)      | `docker compose up -d --build` from this repo root with a local `.env`              |
 | `validation`   | Ubuntu Noble VM `serv-ics-fair3r-d-01`, native package install        | Manual GitLab CI job **`deploy_validation`**                                        |
 | `integration`  | Ubuntu Noble VM `serv-ics-fair3r-t-01`, native package install      | Manual GitLab CI job **`deploy_integration`**                                       |
-| `production`     | Ubuntu Noble VM `serv-ics-fair3r-p-01`, native package install        | Manual GitLab CI job **`deploy_production`**                                        |
+| `production`     | Ubuntu Noble VM `serv-ics-fair3r-p-02`, native package install        | Manual GitLab CI job **`deploy_production`**                                        |
 
 ### `validation`, `integration`, and `production` (native install on Ubuntu Noble)
 
