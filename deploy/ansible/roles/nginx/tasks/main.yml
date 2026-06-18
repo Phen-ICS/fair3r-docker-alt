@@ -2,6 +2,14 @@
 # Install nginx reverse proxy. HTTP-only for now (certbot/LE to be wired in a
 # later step, same as the ics-standalone-app-template reference project).
 
+- name: Ensure nginx cache directory exists
+  file:
+    path: /var/cache/nginx/fair3r
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
 - name: Ensure nginx package is installed
   apt:
     name: nginx
