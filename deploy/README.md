@@ -7,7 +7,7 @@ install** on one of three target VMs:
 |----------------|-----------------------------------------|--------------------------------------------------------------|
 | `validation`   | `serv-ics-fair3r-d-01`                  | `https://validation.fair3r.fr` (DNS in front of reverse proxy) |
 | `integration`  | `serv-ics-fair3r-t-01`                  | `https://fair3r.integration.igbmc.u-strasbg.fr` (DNS in front of reverse proxy) |
-| `production`   | `serv-ics-fair3r-p-01`                  | `https://serv-ics-fair3r-p-01.igbmc.u-strasbg.fr` (see `group_vars/production.yml`) |
+| `production`   | `serv-ics-fair3r-p-02`                  | `https://fair3r.fr` (see `group_vars/production.yml`) |
 
 The **`dev`** context is not touched by this folder — developers keep running
 `docker compose up -d --build` from the repo root. See the top-level
@@ -101,7 +101,7 @@ These values used to be GitLab CI variables but are now tracked in git:
   - `doi_test_mode: "true"` (DataCite sandbox, like validation).
 
 - **`group_vars/production.yml`** — same keys as `validation.yml`, with
-  `ckan_site_url: https://serv-ics-fair3r-p-01.igbmc.u-strasbg.fr` and
+  `ckan_site_url: https://fair3r.fr` and
   `doi_test_mode: "false"`.
 
 Edit these files and commit; no CI variable change needed. After you change
@@ -150,7 +150,7 @@ python3 deploy/ansible_deploy.py \
 ```
 
 Use `--env integration` / `$INTEGRATION_*` for `serv-ics-fair3r-t-01`, or `--env production` /
-`$PRODUCTION_*` for `serv-ics-fair3r-p-01` (secrets and group_vars load from the matching prefix / file).
+`$PRODUCTION_*` for `serv-ics-fair3r-p-02` (secrets and group_vars load from the matching prefix / file).
 
 (Site URL, contact mail, DOI publisher / test_mode / site_title are read from
 `deploy/ansible/group_vars/<context>.yml` and no longer need to be passed on

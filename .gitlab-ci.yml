@@ -238,7 +238,7 @@ deploy_validation:
     - ics-docker
 
 # --------------------------------------------------------------------------
-# Production stage: deploy to serv-ics-fair3r-p-01 (manual; does NOT gate on
+# Production stage: deploy to serv-ics-fair3r-p-02 (manual; does NOT gate on
 # validation or integration — operators choose when to promote).
 # --------------------------------------------------------------------------
 
@@ -246,7 +246,7 @@ deploy_production:
   stage: production
   <<: *deploy_via_ansible
   variables:
-    SSH_HOST: serv-ics-fair3r-p-01
+    SSH_HOST: serv-ics-fair3r-p-02
     CONTEXT: production
     # Per-context secrets (sourced from GitLab CI variables):
     CKAN_SESSION_SECRET: $PRODUCTION_CKAN_SESSION_SECRET
@@ -269,6 +269,6 @@ deploy_production:
     - deploy_validation
   environment:
     name: production
-    url: https://serv-ics-fair3r-p-01.igbmc.u-strasbg.fr
+    url: https://fair3r.fr
   tags:
     - ics-docker
