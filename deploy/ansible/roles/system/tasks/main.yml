@@ -45,3 +45,12 @@
     owner: root
     group: root
     mode: '0755'
+
+- name: Create cron job for FAIR3R FDF schema update
+  ansible.builtin.cron:
+    name: "Update FAIR3R FDF schema"
+    minute: "0"
+    hour: "0"
+    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
+    user: "{{ ckan_os_user }}"
+    state: present
