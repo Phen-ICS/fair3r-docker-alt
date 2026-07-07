@@ -75,3 +75,32 @@
     path: "{{ dsaudit_pkg_dir.stdout | trim }}/i18n"
     state: directory
     mode: "0755"
+
+# pip runs as root, but fair3r update-schema (daily cron) runs as ckan and
+# writes into ckanext/fair3r/schema/ (fdf_schema.json and i18n sidecars).
+- name: Resolve ckanext-fair3r schema directory
+  ansible.builtin.command:
+    argv:
+      - "{{ ckan_venv }}/bin/python"
+      - -c
+      - "import ckanext.fair3r.tasks as tasks; print(tasks.SCHEMA_DIR)"
+  register: fair3r_schema_dir
+  changed_when: false
+
+- name: Ensure ckanext-fair3r schema directory is writable by CKAN user
+  ansible.builtin.file:
+    path: "{{ fair3r_schema_dir.stdout | trim }}"
+    state: directory
+    owner: "{{ ckan_os_user }}"
+    group: "{{ ckan_os_user }}"
+    mode: "0755"
+  recurse: yes
+
+- name: Create cron job for FAIR3R FDF schema update
+  ansible.builtin.cron:
+    name: "Update FAIR3R FDF schema"
+    minute: "0"
+    hour: "0"
+    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
+    user: "{{ ckan_os_user }}"
+    state: present

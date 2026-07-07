@@ -72,6 +72,18 @@ chown ckan "${CKAN_INI}"
 echo "Installing Fair3R CKAN extensions from GitLab Package Registry (skipped if tokens unset in .env)..."
 install_fair3r_extensions_from_gitlab_pypi
 
+# pip runs as root, but ckan CLI commands (including fair3r update-schema) run
+# as the ckan user and need write access to the schema directory.
+echo "Ensuring ckan user can write to ckanext-fair3r schema directory..."
+FAIR3R_SCHEMA_DIR="$(su -s /bin/bash ckan -c "python -c \"import ckanext.fair3r.tasks as t; print(t.SCHEMA_DIR)\"")"
+if [ -d "${FAIR3R_SCHEMA_DIR}" ]; then
+  chown -R ckan "${FAIR3R_SCHEMA_DIR}"
+  chmod -R 0755 "${FAIR3R_SCHEMA_DIR}"
+  echo "Schema directory ${FAIR3R_SCHEMA_DIR} ownership set to ckan."
+else
+  echo "WARNING: ckanext-fair3r schema directory not found at ${FAIR3R_SCHEMA_DIR}"
+fi
+
 # Mounted source trees (DEV): editable installs run after Package Registry installs so local code wins.
 echo "Installing custom CKAN plugins from mounted sources (DEV context only)..."
 
@@ -282,6 +294,9 @@ fi
 echo "=== Set Fair3R Configuration ==="
 [ -n "$FAIR3R_CONTEXT" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.context = ${FAIR3R_CONTEXT}"
 [ -n "$FAIR3R_ENABLE_FDF_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fdf_integration = ${FAIR3R_ENABLE_FDF_INTEGRATION}"
+
+echo "Downloading and updating FDF schema from GitHub..."
+su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} fair3r update-schema"
 
 
 echo "=== Set Contact Configuration ==="
