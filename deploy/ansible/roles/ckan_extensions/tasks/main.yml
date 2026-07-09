@@ -94,7 +94,7 @@
     owner: "{{ ckan_os_user }}"
     group: "{{ ckan_os_user }}"
     mode: "0755"
-  recurse: yes
+    recurse: yes
 
 - name: Create cron job for FAIR3R FDF schema update
   ansible.builtin.cron:
