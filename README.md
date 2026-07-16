@@ -156,10 +156,45 @@ docker compose ps
 docker compose logs -f ckan
 ```
 
-## 6) Create a sysadmin user
+## 6) Create users
 
+### Create a regular user
 
-### In DEV :
+#### In DEV
+
+```bash
+docker compose exec ckan ckan -c /srv/app/ckan.ini user add jdoe \
+  email=jdoe@example.com \
+  password=StrongPassword123! \
+  fullname="John Doe"
+```
+
+- `jdoe` is the username (required, first positional argument)
+- `email=` is required
+- `password=` is required (minimum 8 characters); if omitted, CKAN prompts for it
+- `fullname=` is optional
+
+Useful related commands:
+
+```bash
+docker compose exec ckan ckan -c /srv/app/ckan.ini user list
+docker compose exec ckan ckan -c /srv/app/ckan.ini user show jdoe
+docker compose exec ckan ckan -c /srv/app/ckan.ini user remove jdoe
+```
+
+#### In integration, validation or production
+
+```bash
+sudo ckan -c /etc/ckan/default/ckan.ini user add jdoe \
+  email=jdoe@example.com \
+  password=StrongPassword123! \
+  fullname="John Doe"
+```
+
+### Create a sysadmin user
+
+#### In DEV
+
 Use the helper script:
 
 ```bash
@@ -185,7 +220,66 @@ sudo ckan -c /etc/ckan/default/ckan.ini sysadmin add admin email=admin@example.c
   - fresh DB: `ckan db init`
   - existing DB: `ckan db upgrade`
 
-## 8) Deployment
+## 8) Updating translations
+
+The UI is available in **English** (default) and **French** (`ckan.locale_default`
+and `ckan.locales_offered` in `ckan/config/ckan.ini.template`). CKAN core ships
+its own French catalog; maintain translations in three of the four Fair3R extensions under
+`src_extensions/` (`ckanext-fair3r`, `ckanext-doi`, `ckanext-pages`). Each ships `i18n/<domain>.pot` and
+`i18n/fr/LC_MESSAGES/<domain>.{po,mo}` — commit both `.po` and `.mo`.
+
+Wrap new user-visible strings before extracting: Python `toolkit._()`, Jinja
+`{{ _('…') }}` / `{% trans %}`, CKAN JS modules `_("…")`.
+
+In **DEV**, run Babel inside the `ckan` container (extensions mounted at
+`/plugins/ckanext-*`):
+
+```bash
+docker compose exec ckan bash -lc '
+  for ext in fair3r doi pages; do
+    cd /plugins/ckanext-$ext
+    python setup.py extract_messages
+    python setup.py update_catalog -l fr
+  done
+'
+```
+
+Edit i18n/fr/LC_MESSAGES/*.po — fill empty msgstr, remove fuzzy flags.
+Then, execute following command:
+```bash
+docker compose exec ckan bash -lc '
+  for ext in fair3r doi pages; do
+    cd /plugins/ckanext-$ext
+    python setup.py compile_catalog -l fr
+  done
+'
+docker compose restart ckan
+```
+
+**fair3r FDF schema** — user-facing strings in `fdf_schema.json` are translated
+via sidecar files in `i18n/<locale>.json`, maintained in the
+[`fair3r-fdf-schema`](https://github.com/Phen-ICS/fair3r-fdf-schema) repository
+(separate from Babel). The nightly `fair3r update-schema` cron downloads both
+the schema and locale files into `schema/` and `schema/i18n/` inside the
+extension.
+
+Contributors edit translations in the schema repo:
+
+```bash
+cd /path/to/fair3r-fdf-schema
+python tools/i18n.py template --locale fr   # refresh keys after schema edits
+python tools/i18n.py check --locale fr      # verify all keys are translated
+```
+
+Sidecar keys use stable ids, e.g.
+`sections.title.fields.publication_year.help`. English text in
+`fdf_schema.json` is the fallback when a translation is missing.
+
+On **validation / integration / production** VMs, publish updated extension
+wheels to GitLab PyPI and re-deploy; restart `ckan-web` and `ckan-worker` so
+gettext reloads.
+
+## 9) Deployment
 
 Fair3R runs in four deployment contexts (`dev` plus three native VMs):
 
