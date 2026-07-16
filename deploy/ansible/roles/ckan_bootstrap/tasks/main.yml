@@ -181,3 +181,25 @@
     LANG: ""
     LC_ALL: ""
   changed_when: false
+
+
+# ---------------------------------------------------------------------------
+# Update schema execution and cron for Fair3r extension
+# ---------------------------------------------------------------------------
+- name: Execute ckanext-fair3r update schema function
+  command: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
+  become_user: "{{ ckan_os_user }}"
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  changed_when: false
+
+
+- name: Create cron job for FAIR3R FDF schema update
+  ansible.builtin.cron:
+    name: "Update FAIR3R FDF schema"
+    minute: "0"
+    hour: "0"
+    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
+    user: "{{ ckan_os_user }}"
+    state: present

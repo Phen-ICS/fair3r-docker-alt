@@ -78,6 +78,7 @@
 
 # pip runs as root, but fair3r update-schema (daily cron) runs as ckan and
 # writes into ckanext/fair3r/schema/ (fdf_schema.json and i18n sidecars).
+# This task must run AFTER pip install to ensure permissions are not overwritten.
 - name: Resolve ckanext-fair3r schema directory
   ansible.builtin.command:
     argv:
@@ -87,7 +88,12 @@
   register: fair3r_schema_dir
   changed_when: false
 
-- name: Ensure ckanext-fair3r schema directory is writable by CKAN user
+- name: Debug resolved schema directory path
+  ansible.builtin.debug:
+    msg: "Resolved schema dir: '{{ fair3r_schema_dir.stdout | trim }}'"
+  when: fair3r_schema_dir.stdout is defined and fair3r_schema_dir.stdout | trim != ""
+
+- name: Ensure ckanext-fair3r schema directory and all contents are owned by CKAN user
   ansible.builtin.file:
     path: "{{ fair3r_schema_dir.stdout | trim }}"
     state: directory
@@ -95,12 +101,3 @@
     group: "{{ ckan_os_user }}"
     mode: "0755"
     recurse: yes
-
-- name: Create cron job for FAIR3R FDF schema update
-  ansible.builtin.cron:
-    name: "Update FAIR3R FDF schema"
-    minute: "0"
-    hour: "0"
-    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
-    user: "{{ ckan_os_user }}"
-    state: present
