@@ -42,6 +42,11 @@ Update at least the following values in `.env`:
   - `CKAN_INTERNAL_SITE_URL` (container-internal URL for xloader, keep `http://ckan:5000`)
 - Extension context:
   - `FAIR3R_CONTEXT` must be one of `DEV`, `INTEGRATION`, `VALIDATION`, `PRODUCTION`
+- FDF schema (DEV only):
+  - `FDF_SCHEMA_LOCAL_PATH` — absolute path on the host to a clone of
+    [`fair3r-fdf-schema`](https://github.com/Phen-ICS/fair3r-fdf-schema)
+    (the directory that contains `fdf_schema.json`). Leave empty in
+    `INTEGRATION` / `VALIDATION` / `PRODUCTION`.
 
 Mode behavior:
 
@@ -49,6 +54,9 @@ Mode behavior:
   - dev supervisor profile
   - CKAN reloader enabled
   - editable install from `/plugins` mount
+  - FDF schema: if `FDF_SCHEMA_LOCAL_PATH` points at a local clone, Fair3R reads
+    `fdf_schema.json` and `i18n/` from that mount (no GitHub download). If unset,
+    the entrypoint downloads the latest schema from GitHub like other contexts.
 - `FAIR3R_CONTEXT=INTEGRATION|VALIDATION|PRODUCTION`:
   - production supervisor profile (same as packaged `supervisord.prod.conf` in the image)
   - CKAN reloader disabled
@@ -99,6 +107,8 @@ In `.env`:
 - Tokens and/or mounted repos as needed
 - `CKAN_EXTRA_PLUGINS="fair3r doi pages plotly_explorer"`
 - `CKAN_EXTRA_VIEWS="plotly_explorer"`
+- `FDF_SCHEMA_LOCAL_PATH=/absolute/path/to/fair3r-fdf-schema` (your local clone
+  of [`fair3r-fdf-schema`](https://github.com/Phen-ICS/fair3r-fdf-schema))
 
 Clone your extensions into `src_extensions`:
 
@@ -108,6 +118,21 @@ git clone <doi_repo_url> src_extensions/ckanext
 git clone <pages_repo_url> src_extensions/ckanext-pages
 git clone <plotly_repo_url> src_extensions/ckanext-plotly
 ```
+
+Clone the FDF schema repo anywhere on your machine (it does **not** live under
+`src_extensions`). Edit schema files on a feature branch of that clone; Fair3R
+DEV reads them live from the mount, so you do not copy JSON into
+`ckanext-fair3r` and a container restart cannot overwrite your work. A reviewer
+checks out the same branch in their own clone, sets `FDF_SCHEMA_LOCAL_PATH`,
+and recreates the stack (`docker compose up -d`) to test the form.
+
+```bash
+git clone git@github.com:Phen-ICS/fair3r-fdf-schema.git /path/to/fair3r-fdf-schema
+```
+
+After changing `FDF_SCHEMA_LOCAL_PATH`, recreate the CKAN container so Compose
+reattaches the bind mount (`docker compose up -d` is enough; `restart` is not).
+Schema JSON edits themselves are picked up on the next page load — no restart.
 
 Then start:
 
@@ -259,9 +284,17 @@ docker compose restart ckan
 **fair3r FDF schema** — user-facing strings in `fdf_schema.json` are translated
 via sidecar files in `i18n/<locale>.json`, maintained in the
 [`fair3r-fdf-schema`](https://github.com/Phen-ICS/fair3r-fdf-schema) repository
-(separate from Babel). The nightly `fair3r update-schema` cron downloads both
-the schema and locale files into `schema/` and `schema/i18n/` inside the
-extension.
+(separate from Babel).
+
+On **validation / integration / production**, the nightly `fair3r update-schema`
+cron downloads both the schema and locale files into `schema/` and
+`schema/i18n/` inside the installed extension.
+
+In **DEV**, set `FDF_SCHEMA_LOCAL_PATH` in `.env` when you work on a schema
+branch: the Compose override mounts that clone at `/fdf-schema` and Fair3R reads
+it live (no GitHub download on startup). Leave `FDF_SCHEMA_LOCAL_PATH` empty to
+use the GitHub download at container start instead — same as validation /
+integration / production (nightly cron on the VMs).
 
 Contributors edit translations in the schema repo:
 

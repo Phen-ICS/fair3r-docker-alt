@@ -56,6 +56,7 @@ deploy/
 | Sysadmin create-or-setpass + `sysadmin add`                     | `ckan_bootstrap`                                                                    |
 | Xloader API token rotation (`extract_jwt`)                      | `ckan_bootstrap` — ported 1:1 as `files/rotate_xloader_token.sh`                    |
 | `ckan config-tool` for `fair3r.*` / `contact.mail_to` / `doi.*` / `pages.*` | `ckan_bootstrap`                                                         |
+| `fair3r update-schema` (GitHub download; skipped in DEV Docker only when `FDF_SCHEMA_LOCAL_PATH` is mounted) | Daily cron in `ckan_extensions` (native VMs only) |
 | `ckan doi initdb`, `ckan db upgrade -p pages`                   | `ckan_bootstrap`                                                                    |
 | supervisord `ckan-web` + `xloader-worker`                       | `ckan_services` (systemd `ckan-web.service` + `ckan-worker.service`)                |
 

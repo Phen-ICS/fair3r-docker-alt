@@ -2,8 +2,15 @@ services:
   ckan:
     ports:
       - "${CKAN_PORT}:5000"
+    environment:
+      # Inside the container the host clone is always mounted here (see volumes).
+      CKANEXT_FAIR3R_FDF_SCHEMA_DIR: /fdf-schema
     volumes:
       - ./src_extensions:/plugins:rw
+      # DEV: bind the local fair3r-fdf-schema clone. Set FDF_SCHEMA_LOCAL_PATH
+      # in .env to the absolute host path of that clone. When unset, a repo
+      # placeholder is mounted so Compose always has a valid bind source.
+      - ${FDF_SCHEMA_LOCAL_PATH:-./dev/fdf-schema-placeholder}:/fdf-schema:ro
   db:
     ports:
       - "${CKAN_DB_PORT_EXT}:${CKAN_DB_PORT}"
