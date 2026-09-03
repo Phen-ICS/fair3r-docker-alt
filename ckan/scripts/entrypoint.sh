@@ -100,16 +100,14 @@ if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
 fi
 
 # pip runs as root, but ckan CLI commands (including fair3r update-schema) run
-# as the ckan user and need write access to the schema directory.
+# as the ckan user and need write access to the bundled schema directory when
+# downloading from GitHub. DEV with a local clone reads /fdf-schema instead.
 echo "Ensuring ckan user can write to ckanext-fair3r schema directory..."
 FAIR3R_SCHEMA_DIR="$(su -s /bin/bash ckan -c "python -c \"import ckanext.fair3r.tasks as t; print(t.SCHEMA_DIR)\"")"
-if [ -d "${FAIR3R_SCHEMA_DIR}" ]; then
-  chown -R ckan "${FAIR3R_SCHEMA_DIR}"
-  chmod -R 0755 "${FAIR3R_SCHEMA_DIR}"
-  echo "Schema directory ${FAIR3R_SCHEMA_DIR} ownership set to ckan."
-else
-  echo "WARNING: ckanext-fair3r schema directory not found at ${FAIR3R_SCHEMA_DIR}"
-fi
+mkdir -p "${FAIR3R_SCHEMA_DIR}/i18n"
+chown -R ckan "${FAIR3R_SCHEMA_DIR}"
+chmod -R 0755 "${FAIR3R_SCHEMA_DIR}"
+echo "Schema directory ${FAIR3R_SCHEMA_DIR} ready for ckan user."
 
 
 echo "Ensuring DataStore database and user exist..."
@@ -295,8 +293,19 @@ echo "=== Set Fair3R Configuration ==="
 [ -n "$FAIR3R_CONTEXT" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.context = ${FAIR3R_CONTEXT}"
 [ -n "$FAIR3R_ENABLE_FDF_INTEGRATION" ] && ckan config-tool "$CKAN_INI" "ckanext.fair3r.enable_fdf_integration = ${FAIR3R_ENABLE_FDF_INTEGRATION}"
 
-echo "Downloading and updating FDF schema from GitHub..."
-su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} fair3r update-schema"
+FDF_SCHEMA_CONTAINER_DIR="${CKANEXT_FAIR3R_FDF_SCHEMA_DIR:-/fdf-schema}"
+if [ -f "${FDF_SCHEMA_CONTAINER_DIR}/fdf_schema.json" ]; then
+  echo "Using local FDF schema at ${FDF_SCHEMA_CONTAINER_DIR} (host path: ${FDF_SCHEMA_LOCAL_PATH:-unset})"
+  ckan config-tool "$CKAN_INI" "ckanext.fair3r.fdf_schema_dir = ${FDF_SCHEMA_CONTAINER_DIR}"
+  echo "Skipping GitHub schema download (local clone is mounted)."
+elif [ -n "${FDF_SCHEMA_LOCAL_PATH:-}" ]; then
+  echo "ERROR: FDF_SCHEMA_LOCAL_PATH is set to '${FDF_SCHEMA_LOCAL_PATH}' but ${FDF_SCHEMA_CONTAINER_DIR}/fdf_schema.json was not found."
+  echo "Point FDF_SCHEMA_LOCAL_PATH at a clone of https://github.com/Phen-ICS/fair3r-fdf-schema (the directory that contains fdf_schema.json)."
+  exit 1
+else
+  echo "Downloading and updating FDF schema from GitHub..."
+  su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} fair3r update-schema"
+fi
 
 
 echo "=== Set Contact Configuration ==="
