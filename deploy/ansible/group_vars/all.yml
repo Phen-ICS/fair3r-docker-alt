@@ -16,6 +16,10 @@ ckan_config_dir: "/etc/ckan/default"
 ckan_ini: "/etc/ckan/default/ckan.ini"
 ckan_ini_template: "/etc/ckan/default/ckan.ini.template"
 ckan_storage_path: "/var/lib/ckan/storage"
+# Max resource upload size in MB (CKAN itself defaults to 10 when unset).
+# Not secret, so it lives here rather than as a CI variable; overridden
+# higher for production in group_vars/production.yml.
+ckan_max_resource_size: "10"
 ckan_state_dir: "/var/lib/ckan"
 ckan_os_user: "ckan"
 ckan_common_requirements_file: "/opt/fair3r/ckan-requirements.txt"

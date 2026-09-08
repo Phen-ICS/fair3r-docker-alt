@@ -5,6 +5,9 @@
 
 ckan_site_url: "https://validation.fair3r.fr"
 contact_mail: "groupe-info-ics@igbmc.fr"
+# Explicitly overridden (not just left at the group_vars/all.yml default of
+# 10) so a deploy makes it easy to confirm this value is actually applied.
+ckan_max_resource_size: "20"
 doi_publisher: "Institut Clinique de la Souris"
 # DOI sandbox.
 doi_test_mode: "true"
