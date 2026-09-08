@@ -91,19 +91,23 @@ These values used to be GitLab CI variables but are now tracked in git:
   - `ckan_bootstrap_sysadmin_name` (default `admin`)
   - `ckan_bootstrap_sysadmin_email` (default `admin@igbmc.u-strasbg.fr`)
   - `fair3r_enable_fdf_integration` (default `true`)
+  - `ckan_max_resource_size` (default `"10"`, MB; `ckan.max_resource_size` — CKAN's own default when unset).
   - `gitlab_extensions_pypi_host`, `ckan_extensions_gitlab_pypi_project_ids` (GitLab **project ID** per pip package, keys must match `extension_pypi_tokens` in the playbook)
   - Infrastructure defaults (paths, ports, plugin list, Solr/Redis URLs, CKAN deb URL).
 - **`group_vars/validation.yml`** — values loaded automatically for any host in `[validation]`:
   - `ckan_site_url: https://validation.fair3r.fr` (public hostname; `nginx_validation.conf` `server_name` must match)
   - `contact_mail`, `doi_publisher`, `doi_test_mode: "true"`, `doi_site_title`.
+  - `ckan_max_resource_size: "20"` (explicit override, distinct from the `all.yml` default, to make it easy to confirm a deploy actually picked it up).
 
 - **`group_vars/integration.yml`** — same pattern for `[integration]`:
   - `ckan_site_url: https://fair3r.integration.igbmc.u-strasbg.fr` (`nginx_integration.conf` `server_name` must match)
   - `doi_test_mode: "true"` (DataCite sandbox, like validation).
+  - `ckan_max_resource_size` not overridden here — inherits the `all.yml` default (`"10"`).
 
 - **`group_vars/production.yml`** — same keys as `validation.yml`, with
-  `ckan_site_url: https://fair3r.fr` and
-  `doi_test_mode: "false"`.
+  `ckan_site_url: https://fair3r.fr`,
+  `doi_test_mode: "false"`, and
+  `ckan_max_resource_size: "100"`.
 
 Edit these files and commit; no CI variable change needed. After you change
 `ckan_site_url` (or anything else in [app:main] that CKAN reads only at
