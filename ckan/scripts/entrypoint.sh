@@ -307,6 +307,12 @@ else
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} fair3r update-schema"
 fi
 
+echo "=== Set Upload Limits ==="
+# CKAN defaults to 10 MB for ckan.max_resource_size when unset. nginx's
+# client_max_body_size is already well above that in every environment
+# (100-140M, see nginx/setup and deploy/*.conf), so it's never the binding
+# constraint here.
+[ -n "$CKAN_MAX_RESOURCE_SIZE" ] && ckan config-tool "$CKAN_INI" "ckan.max_resource_size = ${CKAN_MAX_RESOURCE_SIZE}"
 
 echo "=== Set Contact Configuration ==="
 [ -n "$CONTACT_MAIL" ] && ckan config-tool "$CKAN_INI" "ckanext.contact.mail_to = ${CONTACT_MAIL}"
