@@ -13,6 +13,7 @@ ckan.redis.url = ${CKAN_REDIS_URL}
 ckan.site_url = ${CKAN_SITE_URL}
 ckan.site_id = default
 ckan.storage_path = /var/lib/ckan/storage
+ckan.max_resource_size = ${CKAN_MAX_RESOURCE_SIZE}
 
 ckan.locale_default = en
 ckan.locales_offered = en fr

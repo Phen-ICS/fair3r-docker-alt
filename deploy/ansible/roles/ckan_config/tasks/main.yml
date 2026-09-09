@@ -26,6 +26,7 @@
     executable: /bin/bash
   environment:
     CKAN_DEBUG: "false"
+    CKAN_MAX_RESOURCE_SIZE: "{{ ckan_max_resource_size }}"
     CKAN_DB_USER: "{{ ckan_db_user }}"
     CKAN_DB_PASSWORD: "{{ env_config.ckan_db_password }}"
     CKAN_DB_HOST: "{{ ckan_db_host }}"

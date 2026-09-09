@@ -4,6 +4,7 @@
 
 ckan_site_url: "https://fair3r.fr"
 contact_mail: "groupe-info-ics@igbmc.fr"
+ckan_max_resource_size: "100"
 doi_publisher: "Institut Clinique de la Souris"
 # Live DataCite API on production (`doi_test_mode` disables sandbox).
 doi_test_mode: "false"

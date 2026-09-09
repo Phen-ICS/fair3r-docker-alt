@@ -307,7 +307,6 @@ else
   su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} fair3r update-schema"
 fi
 
-
 echo "=== Set Contact Configuration ==="
 [ -n "$CONTACT_MAIL" ] && ckan config-tool "$CKAN_INI" "ckanext.contact.mail_to = ${CONTACT_MAIL}"
 
