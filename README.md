@@ -97,7 +97,7 @@ Use **`FAIR3R_CONTEXT=DEV`** when developing.
 
 Leave the GitLab PyPI token variables (and host) in `.env` empty. On startup the entrypoint will not installs the four extensions from the registry.
 
-Clone into `src_extensions` (mounted as `/plugins`; directory names must match the pip distribution names, e.g. `src_extensions/ckanext-fair3r`, `src_extensions/ckanext` for the DOI extension).
+Clone into `src_extensions` (mounted as `/plugins`; the directory name is arbitrary and does not need to match the pip distribution name — e.g. `src_extensions/ckanext-doi` installs as `ckanext-fair3r-doi`, `src_extensions/ckanext-pages` installs as `ckanext-fair3r-pages`, `src_extensions/ckanext-plotly` installs as `ckanext-fair3r-plotly`).
 2. Set the same GitLab tokens if you **also** want wheels for extensions you are **not** mounting; for any directory under `/plugins`, the entrypoint runs `pip install -e` **after** the registry step so your tree wins.
 
 In `.env`:
@@ -114,7 +114,7 @@ Clone your extensions into `src_extensions`:
 
 ```bash
 git clone <fair3r_repo_url> src_extensions/ckanext-fair3r
-git clone <doi_repo_url> src_extensions/ckanext
+git clone <doi_repo_url> src_extensions/ckanext-doi
 git clone <pages_repo_url> src_extensions/ckanext-pages
 git clone <plotly_repo_url> src_extensions/ckanext-plotly
 ```
