@@ -68,9 +68,9 @@ ckan_bootstrap_sysadmin_email: "admin@igbmc.u-strasbg.fr"
 gitlab_extensions_pypi_host: "gitlab.igbmc.u-strasbg.fr"
 ckan_extensions_gitlab_pypi_project_ids:
   "ckanext-fair3r": 862
-  "ckanext-pages": 863
+  "ckanext-fair3r-pages": 863
   "ckanext-fair3r-doi": 860
-  "ckanext-plotly": 891
+  "ckanext-fair3r-plotly": 891
 
 # Email SMTP settings
 ckan_email_smtp_server : smtp.igbmc.u-strasbg.fr:587

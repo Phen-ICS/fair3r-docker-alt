@@ -41,11 +41,11 @@ install_fair3r_extensions_from_gitlab_pypi() {
 
   fair3r_gitlab_pypi_install "ckanext-fair3r" "${FAIR3R_EXTENSION_PYPI_TOKEN:-}" \
     "${host}" "${FAIR3R_PYPI_PROJECT_ID:-}"
-  fair3r_gitlab_pypi_install "ckanext-pages" "${PAGE_EXTENSION_PYPI_TOKEN:-}" \
+  fair3r_gitlab_pypi_install "ckanext-fair3r-pages" "${PAGE_EXTENSION_PYPI_TOKEN:-}" \
     "${host}" "${PAGE_PYPI_PROJECT_ID:-}"
   fair3r_gitlab_pypi_install "ckanext-fair3r-doi" "${DOI_EXTENSION_PYPI_TOKEN:-}" \
     "${host}" "${DOI_PYPI_PROJECT_ID:-}"
-  fair3r_gitlab_pypi_install "ckanext-plotly" "${PLOTLY_EXTENSION_PYPI_TOKEN:-}" \
+  fair3r_gitlab_pypi_install "ckanext-fair3r-plotly" "${PLOTLY_EXTENSION_PYPI_TOKEN:-}" \
     "${host}" "${PLOTLY_PYPI_PROJECT_ID:-}"
 }
 

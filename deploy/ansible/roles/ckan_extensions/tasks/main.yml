@@ -21,11 +21,18 @@
 # Fair3R forks: wheels from GitLab Package Registry (PyPI API).
 # Project IDs: in ansible/group_vars/all.yml.
 - name: Install Fair3R CKAN extensions from GitLab Package Registry (PyPI)
+  # GitLab is the *only* index here, deliberately not mixed with
+  # --extra-index-url pypi.org: with two indexes pip installs whichever has
+  # the higher version number, not whichever is listed as "extra" — so a
+  # same-named package on public PyPI with an equal/higher version would
+  # silently win over the real GitLab one (dependency confusion). Public
+  # PyPI is for developers testing via a plain `pip install`, entirely
+  # separate from this managed-server install path.
   ansible.builtin.pip:
     name: "{{ item.key }}"
     virtualenv: "{{ ckan_venv }}"
     state: latest
-    extra_args: "--no-cache-dir --force-reinstall --no-deps --index-url https://pypi.org/simple --extra-index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
+    extra_args: "--no-cache-dir --force-reinstall --no-deps --index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
   loop: "{{ ckan_extensions_gitlab_pypi_project_ids | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
@@ -43,9 +50,9 @@
         from importlib.metadata import version
         packages = [
             "ckanext-fair3r",
-            "ckanext-pages",
+            "ckanext-fair3r-pages",
             "ckanext-fair3r-doi",
-            "ckanext-plotly",
+            "ckanext-fair3r-plotly",
         ]
         for package in packages:
             print(f"{package}=={version(package)}")

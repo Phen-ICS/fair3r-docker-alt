@@ -76,9 +76,9 @@ them is a **secret**. Mask **GitLab** and **DataCite** tokens; never log them in
 | `*_CKAN_DATASTORE_READONLY_PASSWORD`                            | Password for the `ckan_datastore_ro` role                       |
 | `*_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`                            | Password of the bootstrap sysadmin user                         |
 | `FAIR3R_EXTENSION_PYPI_TOKEN`                                   | Deploy token or PAT for the **GitLab Package Registry PyPI** of **ckanext-fair3r** (used as `__token__` password in the `--extra-index-url`). Shared across contexts in CI. |
-| `PAGE_EXTENSION_PYPI_TOKEN`                                       | Same for **ckanext-pages**. Shared across contexts. |
-| `DOI_EXTENSION_PYPI_TOKEN`                                      | Same for **ckanext** (DOI extension). Shared across contexts. |
-| `PLOTLY_EXTENSION_PYPI_TOKEN`                                   | Same for **ckanext-plotly**. Shared across contexts. |
+| `PAGE_EXTENSION_PYPI_TOKEN`                                       | Same for **ckanext-fair3r-pages**. Shared across contexts. |
+| `DOI_EXTENSION_PYPI_TOKEN`                                      | Same for **ckanext-fair3r-doi**. Shared across contexts. |
+| `PLOTLY_EXTENSION_PYPI_TOKEN`                                   | Same for **ckanext-fair3r-plotly**. Shared across contexts. |
 | `*_DOI_ACCOUNT_NAME`                                            | DataCite account name (e.g. `CNRS.IGBMC`)                       |
 | `*_DOI_ACCOUNT_PASSWORD`                                        | DataCite account password                                       |
 | `*_DOI_PREFIX`                                                  | DOI prefix (e.g. `10.83249`)                                    |
