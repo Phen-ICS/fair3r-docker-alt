@@ -16,13 +16,26 @@
     virtualenv: "{{ ckan_venv }}"
     extra_args: "--no-deps"
 
-# Fair3R forks: published on public PyPI.
+# Fair3R forks: published on public PyPI. When testing an in-flight MR
+# (extension_override_package/extension_override_wheel set by the CI
+# pipeline that fetched that MR's build:package artifact), that one
+# extension is installed from the local wheel copied below instead.
+- name: Copy extension override wheel to target host
+  ansible.builtin.copy:
+    src: "{{ extension_override_wheel }}"
+    dest: /tmp/extension_override.whl
+    mode: "0644"
+  when: extension_override_wheel is defined
+
 - name: Install Fair3R CKAN extensions from PyPI
   ansible.builtin.pip:
-    name: "{{ item }}"
+    name: >-
+      {{ '/tmp/extension_override.whl'
+         if (extension_override_package is defined and extension_override_package == item)
+         else item }}
     virtualenv: "{{ ckan_venv }}"
-    state: latest
-    extra_args: "--no-cache-dir --force-reinstall --no-deps"
+    state: forcereinstall
+    extra_args: "--no-cache-dir --no-deps"
   loop:
     - ckanext-fair3r
     - ckanext-fair3r-pages

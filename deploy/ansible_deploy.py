@@ -44,6 +44,8 @@ CONTEXT_SCOPED = (
 PLAIN_PASSTHROUGH = (
     "ckan_deb_url",
     "ckan_email_smtp_password",
+    "extension_override_package",
+    "extension_override_wheel",
 )
 
 
@@ -85,6 +87,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+
+    # Resolve before chdir below, and before ansible-playbook runs: this path
+    # is read locally by the `copy` task in ckan_extensions (controller-side
+    # src), not on the target host, so it must stay valid regardless of the
+    # working directory ansible-playbook is invoked from.
+    if args.extension_override_wheel is not None:
+        args.extension_override_wheel = os.path.abspath(args.extension_override_wheel)
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
