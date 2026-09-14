@@ -1,5 +1,5 @@
 ARG CKAN_VERSION=2.11.5
-FROM fair3r/ckan-base:${CKAN_VERSION}
+FROM lbouri/ckan-base:${CKAN_VERSION}
 
 #Build args
 ARG FAIR3R_CONTEXT=""
