@@ -44,14 +44,6 @@
           ckan_bootstrap_sysadmin_password: "{{ lookup('vars', context + '_ckan_bootstrap_sysadmin_password') }}"
           ckan_email_smtp_password: "{{ ckan_email_smtp_password }}"
 
-          # GitLab Package Registry PyPI: one deploy token or PAT per extension
-          # project (read_package / read_api as required by your GitLab policy).
-          extension_pypi_tokens:
-            "ckanext-fair3r": "{{ lookup('vars', context + '_fair3r_extension_pypi_token') }}"
-            "ckanext-fair3r-pages": "{{ lookup('vars', context + '_page_extension_pypi_token') }}"
-            "ckanext-fair3r-doi": "{{ lookup('vars', context + '_doi_extension_pypi_token') }}"
-            "ckanext-fair3r-plotly": "{{ lookup('vars', context + '_plotly_extension_pypi_token') }}"
-
           # DOI API credentials / identifiers (per-context secrets).
           doi_account_name: "{{ lookup('vars', context + '_doi_account_name') }}"
           doi_account_password: "{{ lookup('vars', context + '_doi_account_password') }}"
@@ -88,10 +80,6 @@
           - env_config.ckan_datastore_db_password | length > 0
           - env_config.ckan_datastore_readonly_password | length > 0
           - env_config.ckan_bootstrap_sysadmin_password | length > 0
-          - env_config.extension_pypi_tokens['ckanext-fair3r'] | length > 0
-          - env_config.extension_pypi_tokens['ckanext-fair3r-pages'] | length > 0
-          - env_config.extension_pypi_tokens['ckanext-fair3r-doi'] | length > 0
-          - env_config.extension_pypi_tokens['ckanext-fair3r-plotly'] | length > 0
           - env_config.doi_account_password | length > 0
           - env_config.ckan_site_url | length > 0
         fail_msg: "One or more required per-context variables are missing. Check GitLab CI variables for context '{{ context }}', and group_vars/{{ context }}.yml for non-secrets."

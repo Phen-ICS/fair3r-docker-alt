@@ -75,10 +75,6 @@ them is a **secret**. Mask **GitLab** and **DataCite** tokens; never log them in
 | `*_CKAN_DATASTORE_DB_PASSWORD`                                  | Password for the `ckan_datastore` (read-write) role             |
 | `*_CKAN_DATASTORE_READONLY_PASSWORD`                            | Password for the `ckan_datastore_ro` role                       |
 | `*_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`                            | Password of the bootstrap sysadmin user                         |
-| `FAIR3R_EXTENSION_PYPI_TOKEN`                                   | Deploy token or PAT for the **GitLab Package Registry PyPI** of **ckanext-fair3r** (used as `__token__` password in the `--extra-index-url`). Shared across contexts in CI. |
-| `PAGE_EXTENSION_PYPI_TOKEN`                                       | Same for **ckanext-fair3r-pages**. Shared across contexts. |
-| `DOI_EXTENSION_PYPI_TOKEN`                                      | Same for **ckanext-fair3r-doi**. Shared across contexts. |
-| `PLOTLY_EXTENSION_PYPI_TOKEN`                                   | Same for **ckanext-fair3r-plotly**. Shared across contexts. |
 | `*_DOI_ACCOUNT_NAME`                                            | DataCite account name (e.g. `CNRS.IGBMC`)                       |
 | `*_DOI_ACCOUNT_PASSWORD`                                        | DataCite account password                                       |
 | `*_DOI_PREFIX`                                                  | DOI prefix (e.g. `10.83249`)                                    |
@@ -92,7 +88,6 @@ These values used to be GitLab CI variables but are now tracked in git:
   - `ckan_bootstrap_sysadmin_email` (default `admin@igbmc.u-strasbg.fr`)
   - `fair3r_enable_fdf_integration` (default `true`)
   - `ckan_max_resource_size` (default `"10"`, MB; `ckan.max_resource_size` — CKAN's own default when unset).
-  - `gitlab_extensions_pypi_host`, `ckan_extensions_gitlab_pypi_project_ids` (GitLab **project ID** per pip package, keys must match `extension_pypi_tokens` in the playbook)
   - Infrastructure defaults (paths, ports, plugin list, Solr/Redis URLs, CKAN deb URL).
 - **`group_vars/validation.yml`** — values loaded automatically for any host in `[validation]`:
   - `ckan_site_url: https://validation.fair3r.fr` (public hostname; `nginx_validation.conf` `server_name` must match)
@@ -145,10 +140,6 @@ python3 deploy/ansible_deploy.py \
   --ckan-datastore-db-password "$VALIDATION_CKAN_DATASTORE_DB_PASSWORD" \
   --ckan-datastore-readonly-password "$VALIDATION_CKAN_DATASTORE_READONLY_PASSWORD" \
   --ckan-bootstrap-sysadmin-password "$VALIDATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD" \
-  --fair3r-extension-pypi-token "$FAIR3R_EXTENSION_PYPI_TOKEN" \
-  --page-extension-pypi-token "$PAGE_EXTENSION_PYPI_TOKEN" \
-  --doi-extension-pypi-token "$DOI_EXTENSION_PYPI_TOKEN" \
-  --plotly-extension-pypi-token "$PLOTLY_EXTENSION_PYPI_TOKEN" \
   --doi-account-name "$VALIDATION_DOI_ACCOUNT_NAME" \
   --doi-account-password "$VALIDATION_DOI_ACCOUNT_PASSWORD" \
   --doi-prefix "$VALIDATION_DOI_PREFIX"
