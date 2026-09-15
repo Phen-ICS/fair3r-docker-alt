@@ -47,6 +47,12 @@
     PIP_PROGRESS_BAR: "off"
   changed_when: true
 
+- name: Remove extension override wheel from target host
+  ansible.builtin.file:
+    path: "/tmp/{{ extension_override_wheel | basename }}"
+    state: absent
+  when: extension_override_wheel is defined
+
 - name: Read installed versions of Fair3R CKAN extensions
   command:
     argv:
