@@ -23,14 +23,16 @@
 - name: Copy extension override wheel to target host
   ansible.builtin.copy:
     src: "{{ extension_override_wheel }}"
-    dest: /tmp/extension_override.whl
+    # pip validates wheel filenames strictly (distribution-version-...-tag.whl);
+    # keep the original filename rather than a generic one.
+    dest: "/tmp/{{ extension_override_wheel | basename }}"
     mode: "0644"
   when: extension_override_wheel is defined
 
 - name: Install Fair3R CKAN extensions from PyPI
   ansible.builtin.pip:
     name: >-
-      {{ '/tmp/extension_override.whl'
+      {{ '/tmp/' + (extension_override_wheel | basename)
          if (extension_override_package is defined and extension_override_package == item)
          else item }}
     virtualenv: "{{ ckan_venv }}"
