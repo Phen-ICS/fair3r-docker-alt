@@ -96,8 +96,16 @@ ansible_lint:
 # pull its build:package wheel directly (no registry involved) so
 # deploy_integration installs that exact MR build instead of the latest
 # PyPI release. Each job no-ops (rules skip) unless its extension triggered
-# this pipeline. Requires each extension project's Job Token allowlist to
-# include this project (Settings -> CI/CD -> Job token permission).
+# this pipeline.
+#
+# Uses the GitLab REST API (jobs/artifacts/:ref/download) with a JOB-TOKEN
+# header rather than needs:project/artifacts: the latter reliably fails with
+# "needs:need has an unsupported type" on this GitLab instance.
+#
+# Requires each extension project's Job Token allowlist to include this
+# project (Settings -> CI/CD -> Job token permission), same as needs:project
+# would have. Project IDs (from the old group_vars/all.yml mapping):
+# ckanext-fair3r=862, ckanext-doi=860, ckanext-pages=863, ckanext-plotly=891.
 # --------------------------------------------------------------------------
 
 fetch:preview:fair3r:
@@ -105,13 +113,10 @@ fetch:preview:fair3r:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
   rules:
     - if: $FAIR3R_PLUGIN_REF
-  needs:
-    - project: ics/ckanext-fair3r
-      job: build:package
-      ref: $FAIR3R_PLUGIN_REF
-      artifacts: true
   script:
-    - mkdir -p preview
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/862/jobs/artifacts/${FAIR3R_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r" > preview/override.env
   artifacts:
@@ -126,13 +131,10 @@ fetch:preview:doi:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
   rules:
     - if: $DOI_PLUGIN_REF
-  needs:
-    - project: ics/ckanext-doi
-      job: build:package
-      ref: $DOI_PLUGIN_REF
-      artifacts: true
   script:
-    - mkdir -p preview
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/860/jobs/artifacts/${DOI_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-doi" > preview/override.env
   artifacts:
@@ -147,13 +149,10 @@ fetch:preview:pages:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
   rules:
     - if: $PAGE_PLUGIN_REF
-  needs:
-    - project: ics/ckanext-pages
-      job: build:package
-      ref: $PAGE_PLUGIN_REF
-      artifacts: true
   script:
-    - mkdir -p preview
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/863/jobs/artifacts/${PAGE_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-pages" > preview/override.env
   artifacts:
@@ -168,13 +167,10 @@ fetch:preview:plotly:
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
   rules:
     - if: $PLOTLY_PLUGIN_REF
-  needs:
-    - project: ics/ckanext-plotly
-      job: build:package
-      ref: $PLOTLY_PLUGIN_REF
-      artifacts: true
   script:
-    - mkdir -p preview
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/891/jobs/artifacts/${PLOTLY_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-plotly" > preview/override.env
   artifacts:
