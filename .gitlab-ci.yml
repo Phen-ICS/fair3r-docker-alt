@@ -40,7 +40,7 @@ stages:
       EXTRA_ARGS=""
       if [ -f preview/override.env ]; then
         . preview/override.env
-        EXTRA_ARGS="--extension-override-package $PREVIEW_PACKAGE --extension-override-wheel preview/override.whl"
+        EXTRA_ARGS="--extension-override-package $PREVIEW_PACKAGE --extension-override-wheel preview/$PREVIEW_WHEEL"
       fi
       python3 deploy/ansible_deploy.py \
         --env "$CONTEXT" \
@@ -124,8 +124,9 @@ fetch:preview:fair3r:
     - mkdir -p preview dist
     - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/862/jobs/${FAIR3R_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
-    - cp dist/*.whl preview/override.whl
+    - cp dist/*.whl preview/
     - echo "PREVIEW_PACKAGE=ckanext-fair3r" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
   artifacts:
     paths:
       - preview/
@@ -142,8 +143,9 @@ fetch:preview:doi:
     - mkdir -p preview dist
     - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/860/jobs/${DOI_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
-    - cp dist/*.whl preview/override.whl
+    - cp dist/*.whl preview/
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-doi" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
   artifacts:
     paths:
       - preview/
@@ -160,8 +162,9 @@ fetch:preview:pages:
     - mkdir -p preview dist
     - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/863/jobs/${PAGE_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
-    - cp dist/*.whl preview/override.whl
+    - cp dist/*.whl preview/
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-pages" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
   artifacts:
     paths:
       - preview/
@@ -178,8 +181,9 @@ fetch:preview:plotly:
     - mkdir -p preview dist
     - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/891/jobs/${PLOTLY_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
-    - cp dist/*.whl preview/override.whl
+    - cp dist/*.whl preview/
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-plotly" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
   artifacts:
     paths:
       - preview/
