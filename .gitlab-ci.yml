@@ -98,13 +98,20 @@ ansible_lint:
 # PyPI release. Each job no-ops (rules skip) unless its extension triggered
 # this pipeline.
 #
-# Uses the GitLab REST API (jobs/artifacts/:ref/download) with a JOB-TOKEN
-# header rather than needs:project/artifacts: the latter reliably fails with
-# "needs:need has an unsupported type" on this GitLab instance.
+# Uses the GitLab REST API (jobs/:job_id/artifacts) with a JOB-TOKEN header
+# rather than needs:project/artifacts (fails with "needs:need has an
+# unsupported type" on this GitLab instance) or jobs/artifacts/:ref/download
+# (requires "the latest successful pipeline" for that ref, which can never
+# be true here: the extension's pipeline is still running, blocked on this
+# very trigger job via strategy: depend). Downloading by job ID only
+# requires that one job to have succeeded, not the whole pipeline. The job
+# ID is passed down via <EXT>_BUILD_JOB_ID, forwarded by each extension's
+# trigger:fair3r-docker-alt:integration job from a dotenv artifact emitted
+# by its own build:package job.
 #
 # Requires each extension project's Job Token allowlist to include this
-# project (Settings -> CI/CD -> Job token permission), same as needs:project
-# would have. Project IDs (from the old group_vars/all.yml mapping):
+# project (Settings -> CI/CD -> Job token permission). Project IDs (from the
+# old group_vars/all.yml mapping):
 # ckanext-fair3r=862, ckanext-doi=860, ckanext-pages=863, ckanext-plotly=891.
 # --------------------------------------------------------------------------
 
@@ -115,7 +122,7 @@ fetch:preview:fair3r:
     - if: $FAIR3R_PLUGIN_REF
   script:
     - mkdir -p preview dist
-    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/862/jobs/artifacts/${FAIR3R_PLUGIN_REF}/download"
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/862/jobs/${FAIR3R_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r" > preview/override.env
@@ -133,7 +140,7 @@ fetch:preview:doi:
     - if: $DOI_PLUGIN_REF
   script:
     - mkdir -p preview dist
-    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/860/jobs/artifacts/${DOI_PLUGIN_REF}/download"
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/860/jobs/${DOI_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-doi" > preview/override.env
@@ -151,7 +158,7 @@ fetch:preview:pages:
     - if: $PAGE_PLUGIN_REF
   script:
     - mkdir -p preview dist
-    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/863/jobs/artifacts/${PAGE_PLUGIN_REF}/download"
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/863/jobs/${PAGE_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-pages" > preview/override.env
@@ -169,7 +176,7 @@ fetch:preview:plotly:
     - if: $PLOTLY_PLUGIN_REF
   script:
     - mkdir -p preview dist
-    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/891/jobs/artifacts/${PLOTLY_PLUGIN_REF}/download"
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/891/jobs/${PLOTLY_BUILD_JOB_ID}/artifacts"'
     - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/override.whl
     - echo "PREVIEW_PACKAGE=ckanext-fair3r-plotly" > preview/override.env
