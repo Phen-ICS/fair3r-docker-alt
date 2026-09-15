@@ -1,8 +1,6 @@
 ---
-# Install all CKAN extensions into the package venv at /usr/lib/ckan/default.
-#
-# Matches docker-compose CKAN entrypoint Fair3R install: GitLab Package Registry PyPI URLs with
-# per-extension tokens (see ansible/group_vars/all.yml → ckan_extensions_gitlab_pypi_project_ids).
+# Install all CKAN extensions into the package venv at /usr/lib/ckan/default,
+# from public PyPI.
 
 - name: Copy common CKAN requirements
   ansible.builtin.copy:
@@ -18,28 +16,34 @@
     virtualenv: "{{ ckan_venv }}"
     extra_args: "--no-deps"
 
-# Fair3R forks: wheels from GitLab Package Registry (PyPI API).
-# Project IDs: in ansible/group_vars/all.yml.
-- name: Install Fair3R CKAN extensions from GitLab Package Registry (PyPI)
-  # GitLab is the *only* index here, deliberately not mixed with
-  # --extra-index-url pypi.org: with two indexes pip installs whichever has
-  # the higher version number, not whichever is listed as "extra" — so a
-  # same-named package on public PyPI with an equal/higher version would
-  # silently win over the real GitLab one (dependency confusion). Public
-  # PyPI is for developers testing via a plain `pip install`, entirely
-  # separate from this managed-server install path.
+# Fair3R forks: published on public PyPI. When testing an in-flight MR
+# (extension_override_package/extension_override_wheel set by the CI
+# pipeline that fetched that MR's build:package artifact), that one
+# extension is installed from the local wheel copied below instead.
+- name: Copy extension override wheel to target host
+  ansible.builtin.copy:
+    src: "{{ extension_override_wheel }}"
+    dest: /tmp/extension_override.whl
+    mode: "0644"
+  when: extension_override_wheel is defined
+
+- name: Install Fair3R CKAN extensions from PyPI
   ansible.builtin.pip:
-    name: "{{ item.key }}"
+    name: >-
+      {{ '/tmp/extension_override.whl'
+         if (extension_override_package is defined and extension_override_package == item)
+         else item }}
     virtualenv: "{{ ckan_venv }}"
-    state: latest
-    extra_args: "--no-cache-dir --force-reinstall --no-deps --index-url https://__token__:{{ env_config.extension_pypi_tokens[item.key] | urlencode }}@{{ gitlab_extensions_pypi_host }}/api/v4/projects/{{ item.value | int }}/packages/pypi/simple"
-  loop: "{{ ckan_extensions_gitlab_pypi_project_ids | dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
+    state: forcereinstall
+    extra_args: "--no-cache-dir --no-deps"
+  loop:
+    - ckanext-fair3r
+    - ckanext-fair3r-pages
+    - ckanext-fair3r-doi
+    - ckanext-fair3r-plotly
   environment:
     PIP_PROGRESS_BAR: "off"
   changed_when: true
-  no_log: true
 
 - name: Read installed versions of Fair3R CKAN extensions
   command:

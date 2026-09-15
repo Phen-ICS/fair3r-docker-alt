@@ -37,6 +37,11 @@ stages:
   timeout: 2h
   script:
     - |
+      EXTRA_ARGS=""
+      if [ -f preview/override.env ]; then
+        . preview/override.env
+        EXTRA_ARGS="--extension-override-package $PREVIEW_PACKAGE --extension-override-wheel preview/override.whl"
+      fi
       python3 deploy/ansible_deploy.py \
         --env "$CONTEXT" \
         --host "$SSH_HOST" \
@@ -47,14 +52,11 @@ stages:
         --ckan-datastore-db-password "$CKAN_DATASTORE_DB_PASSWORD" \
         --ckan-datastore-readonly-password "$CKAN_DATASTORE_READONLY_PASSWORD" \
         --ckan-bootstrap-sysadmin-password "$CKAN_BOOTSTRAP_SYSADMIN_PASSWORD" \
-        --fair3r-extension-pypi-token "$FAIR3R_EXTENSION_PYPI_TOKEN" \
-        --page-extension-pypi-token "$PAGE_EXTENSION_PYPI_TOKEN" \
-        --doi-extension-pypi-token "$DOI_EXTENSION_PYPI_TOKEN" \
-        --plotly-extension-pypi-token "$PLOTLY_EXTENSION_PYPI_TOKEN" \
         --doi-account-name "$DOI_ACCOUNT_NAME" \
         --doi-account-password "$DOI_ACCOUNT_PASSWORD" \
         --doi-prefix "$DOI_PREFIX" \
-        --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD"
+        --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD" \
+        $EXTRA_ARGS
 
 .ckanext_test: &ckanext_test
   <<: *ssh_setup
@@ -90,12 +92,111 @@ ansible_lint:
     - ics-docker
 
 # --------------------------------------------------------------------------
+# Preview artifact fetch: when an extension's MR pipeline triggers this one,
+# pull its build:package wheel directly (no registry involved) so
+# deploy_integration installs that exact MR build instead of the latest
+# PyPI release. Each job no-ops (rules skip) unless its extension triggered
+# this pipeline.
+#
+# Uses the GitLab REST API (jobs/artifacts/:ref/download) with a JOB-TOKEN
+# header rather than needs:project/artifacts: the latter reliably fails with
+# "needs:need has an unsupported type" on this GitLab instance.
+#
+# Requires each extension project's Job Token allowlist to include this
+# project (Settings -> CI/CD -> Job token permission), same as needs:project
+# would have. Project IDs (from the old group_vars/all.yml mapping):
+# ckanext-fair3r=862, ckanext-doi=860, ckanext-pages=863, ckanext-plotly=891.
+# --------------------------------------------------------------------------
+
+fetch:preview:fair3r:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $FAIR3R_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/862/jobs/artifacts/${FAIR3R_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/override.whl
+    - echo "PREVIEW_PACKAGE=ckanext-fair3r" > preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
+fetch:preview:doi:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $DOI_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/860/jobs/artifacts/${DOI_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/override.whl
+    - echo "PREVIEW_PACKAGE=ckanext-fair3r-doi" > preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
+fetch:preview:pages:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $PAGE_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/863/jobs/artifacts/${PAGE_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/override.whl
+    - echo "PREVIEW_PACKAGE=ckanext-fair3r-pages" > preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
+fetch:preview:plotly:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $PLOTLY_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - curl --fail --header "JOB-TOKEN:${CI_JOB_TOKEN}" -G --data-urlencode "job=build:package" -o artifacts.zip "${CI_API_V4_URL}/projects/891/jobs/artifacts/${PLOTLY_PLUGIN_REF}/download"
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/override.whl
+    - echo "PREVIEW_PACKAGE=ckanext-fair3r-plotly" > preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
+# --------------------------------------------------------------------------
 # Integration stage: deploy to serv-ics-fair3r-t-01 (manual trigger).
 # --------------------------------------------------------------------------
 
 deploy_integration:
   stage: integration
   <<: *deploy_via_ansible
+  needs:
+    - ansible_lint
+    - job: fetch:preview:fair3r
+      optional: true
+    - job: fetch:preview:doi
+      optional: true
+    - job: fetch:preview:pages
+      optional: true
+    - job: fetch:preview:plotly
+      optional: true
   variables:
     SSH_HOST: serv-ics-fair3r-t-01
     CONTEXT: integration
@@ -106,10 +207,6 @@ deploy_integration:
     CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
     CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $INTEGRATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
-    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
-    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
-    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
-    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
@@ -211,10 +308,6 @@ deploy_validation:
     CKAN_DATASTORE_DB_PASSWORD: $VALIDATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $VALIDATION_CKAN_DATASTORE_READONLY_PASSWORD
     CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $VALIDATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
-    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
-    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
-    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
-    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
@@ -256,10 +349,6 @@ deploy_production:
     CKAN_DATASTORE_DB_PASSWORD: $PRODUCTION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $PRODUCTION_CKAN_DATASTORE_READONLY_PASSWORD
     CKAN_BOOTSTRAP_SYSADMIN_PASSWORD: $PRODUCTION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD
-    FAIR3R_EXTENSION_PYPI_TOKEN: $FAIR3R_EXTENSION_PYPI_TOKEN
-    PAGE_EXTENSION_PYPI_TOKEN: $PAGE_EXTENSION_PYPI_TOKEN
-    DOI_EXTENSION_PYPI_TOKEN: $DOI_EXTENSION_PYPI_TOKEN
-    PLOTLY_EXTENSION_PYPI_TOKEN: $PLOTLY_EXTENSION_PYPI_TOKEN
     DOI_ACCOUNT_NAME: $PRODUCTION_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $PRODUCTION_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $PRODUCTION_DOI_PREFIX
