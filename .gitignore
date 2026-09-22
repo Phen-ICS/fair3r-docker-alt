@@ -1,9 +1,4 @@
 .env
-.env.*
-docker-compose.ckan212-test.yml
-ckan/requirements.2.12-test.txt
-ckan/Dockerfile.2.12-test
-ckan/config/ckan.ini.2.12-test.template
 .vagrant
 .vs
 .mypy_cache
