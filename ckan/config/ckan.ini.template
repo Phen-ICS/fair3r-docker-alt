@@ -4,7 +4,7 @@ debug = ${CKAN_DEBUG}
 [app:main]
 use = egg:ckan
 
-ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view contact ${CKAN_EXTRA_PLUGINS}
+ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view ${CKAN_EXTRA_PLUGINS} contact
 
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
