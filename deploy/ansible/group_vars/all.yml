@@ -60,6 +60,13 @@ ckan_extra_views: "plotly_explorer"
 ckan_bootstrap_sysadmin_name: "admin"
 ckan_bootstrap_sysadmin_email: "admin@igbmc.u-strasbg.fr"
 
+# Optional technical sysadmin used as the actor for harvest jobs (e.g.
+# oaipmh_harvester) - mirrors ckan/scripts/entrypoint.sh's
+# CKAN_HARVEST_USER_*. Left empty: not created until a real deploy actually
+# needs it (harvest/oaipmh_harvester aren't in ckan_extra_plugins yet either).
+ckan_harvest_user_name: ""
+ckan_harvest_user_email: ""
+
 # Fair3R extensions: install from GitLab Package Registry (PyPI API), not git+.
 # Each key is the pip distribution name; value is the GitLab project ID whose
 # PyPI simple index is /api/v4/projects/<id>/packages/pypi/simple.

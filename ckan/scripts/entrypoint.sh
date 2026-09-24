@@ -258,6 +258,38 @@ if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_BOOTSTRAP_
   fi
 fi
 
+# Optional technical sysadmin account used as the actor for harvest jobs
+# (ckanext-harvest based harvesters, e.g. oaipmh_harvester), so that
+# harvested datasets show a real, identifiable creator instead of an
+# unresolved username. Skipped entirely unless CKAN_HARVEST_USER_NAME is set.
+if [ -n "${CKAN_HARVEST_USER_NAME:-}" ]; then
+  echo "Ensuring harvest user '${CKAN_HARVEST_USER_NAME}' exists and password matches .env..."
+  harvest_user_exists="$(
+    PGPASSWORD="${CKAN_DB_PASSWORD}" psql \
+      -h "${CKAN_DB_HOST}" \
+      -p "${CKAN_DB_PORT}" \
+      -U "${CKAN_DB_USER}" \
+      -d "${CKAN_DB_NAME}" \
+      -tAc "SELECT 1 FROM \"user\" WHERE name='${CKAN_HARVEST_USER_NAME}' LIMIT 1;" \
+      | tr -d '[:space:]'
+  )"
+  if [ "${harvest_user_exists}" = "1" ]; then
+    su -s /bin/bash ckan -c \
+      "ckan -c ${CKAN_INI} user setpass ${CKAN_HARVEST_USER_NAME} -p ${CKAN_HARVEST_USER_PASSWORD}" \
+      >/dev/null
+  else
+    su -s /bin/bash ckan -c \
+      "ckan -c ${CKAN_INI} user add ${CKAN_HARVEST_USER_NAME} email=${CKAN_HARVEST_USER_EMAIL} password=${CKAN_HARVEST_USER_PASSWORD}" \
+      >/dev/null
+  fi
+
+  if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} sysadmin add ${CKAN_HARVEST_USER_NAME}" >/dev/null 2>&1; then
+    if ! su -s /bin/bash ckan -c "ckan -c ${CKAN_INI} user show ${CKAN_HARVEST_USER_NAME}" | grep -qi "sysadmin"; then
+      echo "WARNING: User '${CKAN_HARVEST_USER_NAME}' is not sysadmin and cannot be promoted automatically."
+    fi
+  fi
+fi
+
 # Extract JWT from output (CKAN CLI may mix INFO logs with token on stdout)
 extract_jwt() {
   grep -oE 'eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+' | tail -1

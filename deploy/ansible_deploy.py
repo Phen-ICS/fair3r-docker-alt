@@ -34,6 +34,7 @@ CONTEXT_SCOPED = (
     "ckan_datastore_db_password",
     "ckan_datastore_readonly_password",
     "ckan_bootstrap_sysadmin_password",
+    "ckan_harvest_user_password",
     "doi_account_name",
     "doi_account_password",
     "doi_prefix",

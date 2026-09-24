@@ -42,6 +42,8 @@
           ckan_datastore_db_password: "{{ lookup('vars', context + '_ckan_datastore_db_password') }}"
           ckan_datastore_readonly_password: "{{ lookup('vars', context + '_ckan_datastore_readonly_password') }}"
           ckan_bootstrap_sysadmin_password: "{{ lookup('vars', context + '_ckan_bootstrap_sysadmin_password') }}"
+          # Optional: not every context passes this yet (see group_vars/all.yml).
+          ckan_harvest_user_password: "{{ lookup('vars', context + '_ckan_harvest_user_password', default='') }}"
           ckan_email_smtp_password: "{{ ckan_email_smtp_password }}"
 
           # DOI API credentials / identifiers (per-context secrets).
@@ -69,6 +71,8 @@
           # ------- Pipeline-level non-secrets (from group_vars/all.yml) -------
           ckan_bootstrap_sysadmin_name: "{{ ckan_bootstrap_sysadmin_name }}"
           ckan_bootstrap_sysadmin_email: "{{ ckan_bootstrap_sysadmin_email }}"
+          ckan_harvest_user_name: "{{ ckan_harvest_user_name }}"
+          ckan_harvest_user_email: "{{ ckan_harvest_user_email }}"
           fair3r_enable_fdf_integration: "{{ fair3r_enable_fdf_integration }}"
 
     - name: Assert required per-context secrets are present
