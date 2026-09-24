@@ -8,13 +8,20 @@ ARG FAIR3R_CONTEXT=""
 USER root
 
 # Common packages
+# g++/libpq-dev (build-essential + Postgres headers) are needed to compile
+# psycopg2 and other C-extension Python deps. CKAN 2.11's base image kept
+# these in its final stage, but CKAN 2.12's base image strips them down to
+# libpq5 (runtime only) - install them ourselves rather than depend on that,
+# so we don't need to track upstream's base-image internals.
 RUN if command -v apt-get >/dev/null 2>&1; then \
       apt-get update && \
       apt-get install -y --no-install-recommends \
         bash \
         curl \
+        g++ \
         gettext-base \
         git \
+        libpq-dev \
         postgresql-client \
         supervisor && \
       rm -rf /var/lib/apt/lists/*; \
@@ -22,8 +29,10 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
       apk add --no-cache \
         bash \
         curl \
+        g++ \
         gettext \
         git \
+        postgresql-dev \
         postgresql-client \
         supervisor; \
     else \
