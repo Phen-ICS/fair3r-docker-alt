@@ -7,9 +7,22 @@
 # front door), neutralise the supervisor configs because the web stack is systemd
 # (uWSGI in ckan-web, same binary as packaged supervisor), plus ckan-worker.
 
+# libpq-dev/build-essential (headers + compiler) are needed to compile
+# psycopg2 and other C-extension Python deps via pip. This previously worked
+# by accident: apt's python3-psycopg2 (see the system role) happened to
+# satisfy whatever exact version ckan/requirements.txt pinned, so pip never
+# had to build it from source - until a routine version bump (2.9.11 ->
+# 2.9.12 for the 2.12 migration) broke that coincidence and pip tried to
+# compile against a VM that was never actually set up to compile anything
+# (fatal error: pg_config.h: No such file or directory). Same class of gap
+# as the Docker image's own toolchain fix (ckan/Dockerfile) - install the
+# real build dependencies instead of relying on apt's binary package always
+# matching pip's pin by luck.
 - name: Install CKAN package dependencies
   apt:
     name:
+      - build-essential
+      - libpq-dev
       - libpq5
       - supervisor
       - nginx
