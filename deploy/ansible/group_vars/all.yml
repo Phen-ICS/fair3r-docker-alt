@@ -3,14 +3,14 @@
 # production). All of these can be overridden with
 # -e key=value from ansible_deploy.py (and hence from GitLab CI variables).
 
-ckan_version: "2.11.5"
+ckan_version: "2.12.0"
 
-# Official CKAN 2.11 package URL. The base project is built for Ubuntu
+# Official CKAN 2.12 package URL. The base project is built for Ubuntu
 # Noble (24.04); if your VM is on a different release, override
 # `ckan_deb_url` from the CLI (e.g. the -jammy or -focal variant).
-ckan_deb_url: "https://packaging.ckan.org/python-ckan_2.11-noble_amd64.deb"
+ckan_deb_url: "https://packaging.ckan.org/python-ckan_2.12-noble_amd64.deb"
 
-# Filesystem layout (match the CKAN 2.11 package install defaults).
+# Filesystem layout (match the CKAN package install defaults).
 ckan_venv: "/usr/lib/ckan/default"
 ckan_config_dir: "/etc/ckan/default"
 ckan_ini: "/etc/ckan/default/ckan.ini"
