@@ -350,7 +350,7 @@ The resulting instance is supposed to be **identical** to the `dev` stack:
   `/etc/ckan/default/ckan.ini` on the VM vs `/srv/app/ckan.ini` in the
   container).
 - Same bootstrap flow (sysadmin create-or-sync, Xloader token rotation,
-  fair3r / doi / pages `config-tool` settings, `doi initdb`,
+  fair3r / doi / pages `config-tool` settings, `db upgrade -p doi`,
   `db upgrade -p pages`).
 - Same two long-running processes — `ckan-web` and `ckan jobs worker` —
   but managed by **systemd** (`ckan-web.service`, `ckan-worker.service`)
