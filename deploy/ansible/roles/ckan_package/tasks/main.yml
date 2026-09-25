@@ -1,5 +1,6 @@
 ---
-# Install the CKAN 2.11 Ubuntu package from packaging.ckan.org.
+# Install the CKAN Ubuntu package from packaging.ckan.org (version pinned by
+# ckan_version/ckan_deb_url in group_vars).
 #
 # The package creates the 'ckan' system user, installs a virtualenv at
 # /usr/lib/ckan/default, ships uWSGI + /etc/ckan/default/{wsgi.py,ckan-uwsgi.ini},
@@ -7,9 +8,22 @@
 # front door), neutralise the supervisor configs because the web stack is systemd
 # (uWSGI in ckan-web, same binary as packaged supervisor), plus ckan-worker.
 
+# libpq-dev/build-essential (headers + compiler) are needed to compile
+# psycopg2 and other C-extension Python deps via pip. This previously worked
+# by accident: apt's python3-psycopg2 (see the system role) happened to
+# satisfy whatever exact version ckan/requirements.txt pinned, so pip never
+# had to build it from source - until a routine version bump (2.9.11 ->
+# 2.9.12 for the 2.12 migration) broke that coincidence and pip tried to
+# compile against a VM that was never actually set up to compile anything
+# (fatal error: pg_config.h: No such file or directory). Same class of gap
+# as the Docker image's own toolchain fix (ckan/Dockerfile) - install the
+# real build dependencies instead of relying on apt's binary package always
+# matching pip's pin by luck.
 - name: Install CKAN package dependencies
   apt:
     name:
+      - build-essential
+      - libpq-dev
       - libpq5
       - supervisor
       - nginx
@@ -36,23 +50,30 @@
   register: ckan_pkg_version
   changed_when: false
 
-- name: Require CKAN deb to match ckan_version when no package is installed yet
+# Compares the *target* upstream version (from the downloaded deb) against
+# whatever is currently installed - not just "is anything installed at all".
+# Originally this only handled a fresh VM with no CKAN package yet, silently
+# skipping the install/upgrade step whenever python-ckan was already present
+# regardless of its version - so bumping ckan_deb_url/ckan_version here had
+# no effect at all on an existing VM, leaving its actual CKAN code on the old
+# version while pip still upgraded requirements.txt underneath it (real
+# failure hit during the 2.12 migration: CKAN 2.11's ckan/lib/jobs.py
+# importing an rq API that requirements.txt's new rq==2.10.0 no longer has).
+- name: Require CKAN deb to match ckan_version before install/upgrade
   assert:
     that:
       - ckan_deb_upstream.stdout | trim == ckan_version | trim
     fail_msg: >-
       The deb at ckan_deb_url installs upstream {{ ckan_deb_upstream.stdout | trim }}, but
       ckan_version is {{ ckan_version }}. Align both in group_vars/all.yml (or override
-      ckan_deb_url to a package matching ckan_version) before first install.
-  when: ckan_pkg_version.stdout | length == 0
+      ckan_deb_url to a package matching ckan_version) before install/upgrade.
+  when: ckan_pkg_version.stdout | trim != ckan_deb_upstream.stdout | trim
 
-- name: Install CKAN deb package
+- name: Install/upgrade CKAN deb package
   apt:
     deb: "/opt/fair3r/{{ ckan_deb_url | basename }}"
     state: present
-  when:
-    - ckan_pkg_version.stdout | length == 0
-    - ckan_deb_upstream.stdout | trim == ckan_version | trim
+  when: ckan_pkg_version.stdout | trim != ckan_deb_upstream.stdout | trim
 
 - name: Ensure CKAN os user exists (created by the deb, but double-check)
   user:
