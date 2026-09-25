@@ -361,7 +361,7 @@ echo "=== Set DOI Configuration ==="
 [ -n "$DOI_TEST_MODE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.test_mode = ${DOI_TEST_MODE}"
 [ -n "$DOI_SITE_TITLE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.site_title = ${DOI_SITE_TITLE}"
 
-ckan -c $CKAN_INI doi initdb
+ckan --config="$CKAN_INI" db upgrade -p doi
 
 echo "=== Set Pages Configuration ==="
 ckan config-tool "$CKAN_INI" "ckanext.pages.organization = True"

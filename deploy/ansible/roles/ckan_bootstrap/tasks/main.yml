@@ -229,21 +229,16 @@
 # ---------------------------------------------------------------------------
 # Final DOI + pages migrations (mirror entrypoint.sh).
 # ---------------------------------------------------------------------------
-- name: Initialise DOI extension database
-  command: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} doi initdb"
+- name: Upgrade DOI and pages extension databases
+  command: "{{ ckan_venv }}/bin/ckan --config={{ ckan_ini }} db upgrade -p {{ item }}"
   become_user: "{{ ckan_os_user }}"
   environment:
     LANG: ""
     LC_ALL: ""
   changed_when: false
-
-- name: Upgrade pages extension database
-  command: "{{ ckan_venv }}/bin/ckan --config={{ ckan_ini }} db upgrade -p pages"
-  become_user: "{{ ckan_os_user }}"
-  environment:
-    LANG: ""
-    LC_ALL: ""
-  changed_when: false
+  loop:
+    - doi
+    - pages
 
 
 # ---------------------------------------------------------------------------
