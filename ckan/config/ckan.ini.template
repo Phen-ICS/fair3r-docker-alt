@@ -6,6 +6,10 @@ use = egg:ckan
 
 ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view dcat structured_data croissant oaipmh_provider ${CKAN_EXTRA_PLUGINS} contact
 
+# Adds FAIR3R FDF form metadata (creators, subjects, related identifiers...)
+# to the Croissant JSON-LD output. See ckanext.fair3r.lib.fdf.croissant_profile.
+ckanext.dcat.croissant.profiles = fair3r_croissant
+
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
 ckan.redis.url = ${CKAN_REDIS_URL}
