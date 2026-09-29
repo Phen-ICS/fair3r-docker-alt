@@ -1,11 +1,11 @@
 ![Docker](https://img.shields.io/badge/docker-24.x-blue)
-![CKAN](https://img.shields.io/badge/CKAN-2.11.5-orange)
+![CKAN](https://img.shields.io/badge/CKAN-2.12.0-orange)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blueviolet)
 ![Redis](https://img.shields.io/badge/Redis-7-red)
 
-# CKAN 2.11 Fair3r Docker Compose Deployment
+# CKAN 2.12 Fair3r Docker Compose Deployment
 
-This project deploys CKAN `2.11.5` with:
+This project deploys CKAN `2.12.0` with:
 
 - `ckan` (ckan web instance + xloader worker, managed by `supervisord`)
 - `db` (a database for ckan and extensions: `postgres:14`)
@@ -325,10 +325,10 @@ Fair3R runs in four deployment contexts (`dev` plus three native VMs):
 
 ### `validation`, `integration`, and `production` (native install on Ubuntu Noble)
 
-These contexts do **not** use Docker. They install CKAN 2.11 from the
-official `python-ckan_2.11-noble_amd64.deb` package (see the [CKAN 2.11
+These contexts do **not** use Docker. They install CKAN 2.12 from the
+official `python-ckan_2.12-noble_amd64.deb` package (see the [CKAN 2.12
 install-from-package
-docs](https://docs.ckan.org/en/2.11/maintaining/installing/install-from-package.html))
+docs](https://docs.ckan.org/en/2.12/maintaining/installing/install-from-package.html))
 and provision the VM end-to-end — Postgres, Solr 9, Redis, nginx, systemd
 units — via the Ansible project under [`deploy/`](./deploy/).
 
@@ -342,7 +342,7 @@ All secrets must be configured as GitLab CI/CD variables — see
 
 The resulting instance is supposed to be **identical** to the `dev` stack:
 
-- Same CKAN version (2.11.5), same extensions (`xloader`, `pdf_view`,
+- Same CKAN version (2.12.0), same extensions (`xloader`, `pdf_view`,
   `contact`, `dsaudit`, `fair3r`, `doi`, `pages`, `plotly_explorer`) and
   same default views.
 - Same `ckan.ini` (rendered by `envsubst` from the authoritative
@@ -393,5 +393,12 @@ and the post-deploy QA checklist.
 
 ### Important note :
 
-DEV environnement is using python 3.12.13 (because of docker ckan-base:2.11.5 that is using a python 3.12.13 trixie image)
-Validation and production will be using 3.12.3 python, because we cannot get ubuntu 22 VMs from IT and because Ubuntu LTS usually stays on the patch level they shipped without jumping to the latest upstream micro release like 3.12.13. This remains a minor difference between environments.
+DEV environment uses whatever Python `ckan/ckan-base:2.12.0` ships upstream —
+confirmed to be Python 3.14.7, since this Dockerfile has no Python-pinning
+mechanism. Validation and production install CKAN from the native
+`.deb` package on Ubuntu Noble, which stays on Ubuntu's own Python 3.12.x
+(we cannot get Ubuntu 22 VMs from IT, and Ubuntu LTS does not jump to the
+latest upstream micro release either). This is a real Python major-version
+gap between DEV and the native VMs (3.14 vs 3.12), not just a minor patch
+difference — pin `PYTHON_VERSION` in `ckan/Dockerfile` if you need DEV to
+track the same Python line as validation/production.
