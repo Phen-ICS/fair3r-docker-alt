@@ -9,7 +9,7 @@ This project deploys CKAN `2.11.5` with:
 
 - `ckan` (ckan web instance + xloader worker, managed by `supervisord`)
 - `db` (a database for ckan and extensions: `postgres:14`)
-- `solr` (the search engine: `ckan/ckan-solr:2.11-solr9`)
+- `solr` (the search engine: `ckan/ckan-solr:2.12-solr9`)
 - `redis` (`redis:7-alpine`)
 - `nginx` (webserver for browser access)
 

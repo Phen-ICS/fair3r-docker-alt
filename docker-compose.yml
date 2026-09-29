@@ -37,7 +37,7 @@ services:
       - dbnet
 
   solr:
-    image: ckan/ckan-solr:2.11-solr9
+    image: ckan/ckan-solr:2.12-solr9
     container_name: ckan-solr
     restart: unless-stopped
     volumes:
