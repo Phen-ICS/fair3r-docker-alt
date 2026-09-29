@@ -17,7 +17,6 @@ charset-normalizer==3.4.9
 -e git+https://github.com/ckan/ckanext-dsaudit.git@c3988427821c43e5dac5078c6adc42f7f16d3fa4#egg=ckanext_dsaudit
 -e git+https://github.com/ckan/ckanext-pdfview.git@071571546b99498f543ea0c34de44da3b9ac9d7b#egg=ckanext_pdfview
 -e git+https://github.com/ckan/ckanext-xloader.git@14c79f086c85150c88f7257f2c7ae104a618824b#egg=ckanext_xloader
--e git+https://github.com/ckan/ckanext-harvest.git@37baba61eec876fbfb44a7165940d6c59e4d1909#egg=ckanext_harvest
 -e git+https://github.com/Phen-ICS/ckanext-dcat.git@dba4d52af7b9e50a8dc993486bc34d85bd6d7400#egg=ckanext_dcat
 oaipmh==3.2.1
 -e git+https://github.com/Phen-ICS/ckanext-oaipmh.git@474802e323c77d0607d41089488f490f87f6ee78#egg=ckanext_oaipmh
