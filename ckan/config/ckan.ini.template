@@ -10,6 +10,10 @@ ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatab
 # to the Croissant JSON-LD output. See ckanext.fair3r.lib.fdf.croissant_profile.
 ckanext.dcat.croissant.profiles = fair3r_croissant
 
+# Same, but for the standard DCAT-AP RDF/XML/Turtle/JSON-LD serializations.
+# See ckanext.fair3r.lib.fdf.dcat_ap_profile.
+ckanext.dcat.rdf.profiles = fair3r_dcat_ap
+
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
 ckan.redis.url = ${CKAN_REDIS_URL}
