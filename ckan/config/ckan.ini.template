@@ -14,6 +14,11 @@ ckanext.dcat.croissant.profiles = fair3r_croissant
 # See ckanext.fair3r.lib.fdf.dcat_ap_profile.
 ckanext.dcat.rdf.profiles = fair3r_dcat_ap
 
+# Same, but for the plain schema.org JSON-LD (Google Dataset Search) block
+# also embedded directly on dataset pages by the "structured_data" plugin.
+# See ckanext.fair3r.lib.fdf.schemaorg_profile.
+ckanext.dcat.structured_data.profiles = fair3r_schemaorg
+
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
 ckan.redis.url = ${CKAN_REDIS_URL}
