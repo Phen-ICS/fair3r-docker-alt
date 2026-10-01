@@ -150,6 +150,14 @@ convention used by the ics-standalone-app-template pipeline.
 
 ## Running manually from a developer workstation
 
+`--host` must also be a host that's actually declared under the matching
+`[validation]`/`[integration]`/`[production]` group in
+`deploy/ansible/inventory.ini` - Ansible resolves `hosts: "{{ target_host }}"`
+against the loaded inventory, and also needs that group membership to load
+`group_vars/<context>.yml`. A host not in the inventory silently no-ops
+("Could not match supplied host pattern" / "skipping: no hosts matched",
+reported as a successful job).
+
 ```bash
 pip install ansible
 ansible-galaxy collection install -r deploy/ansible/requirements.yml
