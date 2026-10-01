@@ -1,13 +1,15 @@
 ---
-# Per-context non-secret values for the production VM (serv-ics-fair3r-p-02).
+# Non-identifying per-context values for the production deploy.
 # Ansible auto-loads this file for any host in the [production] inventory group.
+#
+# ckan_site_url / contact_mail / doi_publisher / doi_site_title identify the
+# organization, so they're plain -e vars from ansible_deploy.py instead (see
+# CKAN_SITE_URL / CONTACT_MAIL / DOI_PUBLISHER / DOI_SITE_TITLE in CI,
+# supplied per environment via GitLab's environment-scoped project
+# variables) rather than committed here.
 
-ckan_site_url: "https://fair3r.fr"
-contact_mail: "groupe-info-ics@igbmc.fr"
 ckan_max_resource_size: "100"
-doi_publisher: "Institut Clinique de la Souris"
 # Live DataCite API on production (`doi_test_mode` disables sandbox).
 doi_test_mode: "false"
-doi_site_title: "Fair3R"
 # Fair3R extension.
 fair3r_enable_fdf_integration: "true"

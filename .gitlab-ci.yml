@@ -57,6 +57,15 @@ stages:
         --doi-account-password "$DOI_ACCOUNT_PASSWORD" \
         --doi-prefix "$DOI_PREFIX" \
         --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD" \
+        --ckan-site-url "$CKAN_SITE_URL" \
+        --contact-mail "$CONTACT_MAIL" \
+        --doi-publisher "$DOI_PUBLISHER" \
+        --doi-site-title "$DOI_SITE_TITLE" \
+        --ckan-email-smtp-server "$CKAN_EMAIL_SMTP_SERVER" \
+        --ckan-email-smtp-user "$CKAN_EMAIL_SMTP_USER" \
+        --ckan-email-smtp-mail-from "$CKAN_EMAIL_SMTP_MAIL_FROM" \
+        --ckan-email-smtp-reply-to "$CKAN_EMAIL_SMTP_REPLY_TO" \
+        --ckan-bootstrap-sysadmin-email "$CKAN_BOOTSTRAP_SYSADMIN_EMAIL" \
         $EXTRA_ARGS
 
 .ckanext_test: &ckanext_test
@@ -193,7 +202,7 @@ fetch:preview:plotly:
     - ics-docker
 
 # --------------------------------------------------------------------------
-# Integration stage: deploy to serv-ics-fair3r-t-01 (manual trigger).
+# Integration stage: deploy to the integration host (manual trigger).
 # --------------------------------------------------------------------------
 
 deploy_integration:
@@ -210,7 +219,6 @@ deploy_integration:
     - job: fetch:preview:plotly
       optional: true
   variables:
-    SSH_HOST: serv-ics-fair3r-t-01
     CONTEXT: integration
     CKAN_SESSION_SECRET: $INTEGRATION_CKAN_SESSION_SECRET
     CKAN_SECRET_KEY: $INTEGRATION_CKAN_SECRET_KEY
@@ -224,9 +232,18 @@ deploy_integration:
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
+    CKAN_EMAIL_SMTP_SERVER: $CKAN_EMAIL_SMTP_SERVER
+    CKAN_EMAIL_SMTP_USER: $CKAN_EMAIL_SMTP_USER
+    CKAN_EMAIL_SMTP_MAIL_FROM: $CKAN_EMAIL_SMTP_MAIL_FROM
+    CKAN_EMAIL_SMTP_REPLY_TO: $CKAN_EMAIL_SMTP_REPLY_TO
+    CKAN_BOOTSTRAP_SYSADMIN_EMAIL: $CKAN_BOOTSTRAP_SYSADMIN_EMAIL
+    # SSH_HOST, CKAN_SITE_URL, CONTACT_MAIL, DOI_PUBLISHER, DOI_SITE_TITLE:
+    # not set here - they come from GitLab's own environment-scoped project
+    # CI/CD variables (one value per environment: integration/validation/
+    # production), so this file never names a real host or domain.
   environment:
     name: integration
-    url: https://fair3r.integration.igbmc.u-strasbg.fr
+    url: $CKAN_SITE_URL
   tags:
     - ics-docker
 
@@ -238,7 +255,6 @@ deploy_integration:
 test:integration:fair3r:
   <<: *ckanext_test
   variables:
-    SSH_HOST: serv-ics-fair3r-t-01
     CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
     CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
@@ -255,7 +271,6 @@ test:integration:fair3r:
 test:integration:doi:
   <<: *ckanext_test
   variables:
-    SSH_HOST: serv-ics-fair3r-t-01
     CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
     CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
@@ -272,7 +287,6 @@ test:integration:doi:
 test:integration:pages:
   <<: *ckanext_test
   variables:
-    SSH_HOST: serv-ics-fair3r-t-01
     CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
     CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
@@ -289,7 +303,6 @@ test:integration:pages:
 test:integration:plotly:
   <<: *ckanext_test
   variables:
-    SSH_HOST: serv-ics-fair3r-t-01
     CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
     CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
     CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
@@ -304,14 +317,13 @@ test:integration:plotly:
       - report-plotly.xml
 
 # --------------------------------------------------------------------------
-# Validation stage: deploy to serv-ics-fair3r-d-01 (manual trigger).
+# Validation stage: deploy to the validation host (manual trigger).
 # --------------------------------------------------------------------------
 
 deploy_validation:
   stage: validation
   <<: *deploy_via_ansible
   variables:
-    SSH_HOST: serv-ics-fair3r-d-01
     CONTEXT: validation
     # Per-context secrets (sourced from GitLab CI variables):
     CKAN_SESSION_SECRET: $VALIDATION_CKAN_SESSION_SECRET
@@ -326,6 +338,14 @@ deploy_validation:
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
+    CKAN_EMAIL_SMTP_SERVER: $CKAN_EMAIL_SMTP_SERVER
+    CKAN_EMAIL_SMTP_USER: $CKAN_EMAIL_SMTP_USER
+    CKAN_EMAIL_SMTP_MAIL_FROM: $CKAN_EMAIL_SMTP_MAIL_FROM
+    CKAN_EMAIL_SMTP_REPLY_TO: $CKAN_EMAIL_SMTP_REPLY_TO
+    CKAN_BOOTSTRAP_SYSADMIN_EMAIL: $CKAN_BOOTSTRAP_SYSADMIN_EMAIL
+    # SSH_HOST, CKAN_SITE_URL, CONTACT_MAIL, DOI_PUBLISHER, DOI_SITE_TITLE:
+    # see deploy_integration above - same reasoning, scoped to this
+    # environment in GitLab instead.
   needs:
     - job: deploy_integration
       optional: true
@@ -340,12 +360,12 @@ deploy_validation:
   when: manual
   environment:
     name: validation
-    url: https://validation.fair3r.fr
+    url: $CKAN_SITE_URL
   tags:
     - ics-docker
 
 # --------------------------------------------------------------------------
-# Production stage: deploy to serv-ics-fair3r-p-02 (manual; does NOT gate on
+# Production stage: deploy to the production host (manual; does NOT gate on
 # validation or integration — operators choose when to promote).
 # --------------------------------------------------------------------------
 
@@ -353,7 +373,6 @@ deploy_production:
   stage: production
   <<: *deploy_via_ansible
   variables:
-    SSH_HOST: serv-ics-fair3r-p-02
     CONTEXT: production
     # Per-context secrets (sourced from GitLab CI variables):
     CKAN_SESSION_SECRET: $PRODUCTION_CKAN_SESSION_SECRET
@@ -368,11 +387,19 @@ deploy_production:
     DOI_ACCOUNT_PASSWORD: $PRODUCTION_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $PRODUCTION_DOI_PREFIX
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
+    CKAN_EMAIL_SMTP_SERVER: $CKAN_EMAIL_SMTP_SERVER
+    CKAN_EMAIL_SMTP_USER: $CKAN_EMAIL_SMTP_USER
+    CKAN_EMAIL_SMTP_MAIL_FROM: $CKAN_EMAIL_SMTP_MAIL_FROM
+    CKAN_EMAIL_SMTP_REPLY_TO: $CKAN_EMAIL_SMTP_REPLY_TO
+    CKAN_BOOTSTRAP_SYSADMIN_EMAIL: $CKAN_BOOTSTRAP_SYSADMIN_EMAIL
+    # SSH_HOST, CKAN_SITE_URL, CONTACT_MAIL, DOI_PUBLISHER, DOI_SITE_TITLE:
+    # see deploy_integration above - same reasoning, scoped to this
+    # environment in GitLab instead.
   when: manual
   needs:
     - deploy_validation
   environment:
     name: production
-    url: https://fair3r.fr
+    url: $CKAN_SITE_URL
   tags:
     - ics-docker

@@ -51,7 +51,11 @@
           doi_account_password: "{{ lookup('vars', context + '_doi_account_password') }}"
           doi_prefix: "{{ lookup('vars', context + '_doi_prefix') }}"
 
-          # email SMTP settings (per-context secrets and non-secrets).
+          # email SMTP settings. server/user/mail_from/reply_to identify the
+          # organization, so (like the secrets above) they're passed as
+          # plain -e vars by ansible_deploy.py rather than committed here;
+          # the rest (ports/flags/empty optional addresses) aren't
+          # identifying and still come from group_vars/all.yml.
           ckan_email_smtp_server: "{{ ckan_email_smtp_server }}"
           ckan_email_smtp_starttls: "{{ ckan_email_smtp_starttls }}"
           ckan_email_smtp_starttls_verify: "{{ ckan_email_smtp_starttls_verify }}"
@@ -61,14 +65,20 @@
           ckan_email_smtp_email_to: "{{ ckan_email_smtp_email_to }}"
           ckan_email_smtp_error_email_from: "{{ ckan_email_smtp_error_email_from }}"
 
-          # ------- Per-context non-secrets (from group_vars/<context>.yml) -------
+          # ------- Per-context identifying values -------
+          # Also plain -e vars from ansible_deploy.py (not group_vars/<context>.yml):
+          # same reasoning as the secrets above, these name the organization
+          # and its domains. GitLab CI supplies a different value per deploy
+          # job via an environment-scoped project variable.
           ckan_site_url: "{{ ckan_site_url }}"
           contact_mail: "{{ contact_mail }}"
           doi_publisher: "{{ doi_publisher }}"
-          doi_test_mode: "{{ doi_test_mode }}"
           doi_site_title: "{{ doi_site_title }}"
+          # Not identifying - stays in group_vars/<context>.yml.
+          doi_test_mode: "{{ doi_test_mode }}"
 
-          # ------- Pipeline-level non-secrets (from group_vars/all.yml) -------
+          # ------- Pipeline-level values (from group_vars/all.yml, except
+          # the sysadmin email which identifies the organization) -------
           ckan_bootstrap_sysadmin_name: "{{ ckan_bootstrap_sysadmin_name }}"
           ckan_bootstrap_sysadmin_email: "{{ ckan_bootstrap_sysadmin_email }}"
           ckan_harvest_user_name: "{{ ckan_harvest_user_name }}"

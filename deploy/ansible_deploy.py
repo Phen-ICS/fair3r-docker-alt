@@ -21,11 +21,9 @@ import sys
 # Per-context secrets. Each one is forwarded to ansible-playbook as
 # `-e <env>_<key>=<value>`, matching the ics-standalone-app-template pattern.
 #
-# Non-secret per-context values (site URL, contact mail, DOI publisher /
-# test_mode / site_title) live in deploy/ansible/group_vars/<context>.yml
-# and therefore don't appear here. Non-secret pipeline-level values
-# (sysadmin name/email, fair3r_enable_fdf_integration) live in
-# group_vars/all.yml and are not passed through the CLI either.
+# doi_test_mode and fair3r_enable_fdf_integration aren't identifying, so they
+# still live in deploy/ansible/group_vars/<context>.yml / all.yml and are not
+# passed through the CLI.
 CONTEXT_SCOPED = (
     "ckan_session_secret",
     "ckan_secret_key",
@@ -40,11 +38,24 @@ CONTEXT_SCOPED = (
     "doi_prefix",
 )
 
-# Plain (non-context-prefixed) pass-through flags. Mostly optional overrides
-# for values that otherwise come from group_vars/all.yml.
+# Plain (non-context-prefixed) pass-through flags: same CLI value regardless
+# of --env, but GitLab CI supplies a different value per job (e.g. via an
+# environment-scoped project variable) for the ones that differ per context.
+# These are identifying-but-not-secret values (site/contact/org names,
+# hostnames, SMTP identity) kept out of group_vars/*.yml so this repo - and
+# any public mirror of it - never bakes in a specific organization's details.
 PLAIN_PASSTHROUGH = (
     "ckan_deb_url",
+    "ckan_site_url",
+    "contact_mail",
+    "doi_publisher",
+    "doi_site_title",
     "ckan_email_smtp_password",
+    "ckan_email_smtp_server",
+    "ckan_email_smtp_user",
+    "ckan_email_smtp_mail_from",
+    "ckan_email_smtp_reply_to",
+    "ckan_bootstrap_sysadmin_email",
     "extension_override_package",
     "extension_override_wheel",
 )

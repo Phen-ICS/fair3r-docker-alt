@@ -26,7 +26,7 @@ variables and the end-to-end deploy flow.
 | `ckan_config`     | envsubst-render `/etc/ckan/default/ckan.ini` from the repo's `ckan/config/ckan.ini.template` |
 | `ckan_bootstrap`  | Port of `ckan/scripts/entrypoint.sh`: db init/upgrade, datastore permissions, sysadmin bootstrap, Xloader token rotation, extension config-tool settings, DOI + pages migrations |
 | `ckan_services`   | Install systemd units `ckan-web.service` and `ckan-worker.service`, enable + start |
-| `nginx`           | Install `fair3r` site from `deploy/nginx_{context}.conf`, remove default/ckan sites, reload |
+| `nginx`           | Install `fair3r` site, templated from `deploy/nginx_{context}.conf` (`server_name` comes from `CKAN_SITE_URL`), remove default/ckan sites, reload |
 | `verification`    | Smoke test: `/api/3/action/status_show` returns 200 and success, systemd units active |
 
 ## Idempotency
