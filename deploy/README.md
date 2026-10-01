@@ -1,13 +1,11 @@
 # Fair3R Deploy — Ansible deployment for `validation`, `integration`, and `production`
 
 This directory provisions a Fair3R CKAN instance as a **native Ubuntu package
-install** on one of three target VMs:
-
-| Context        | Host                                    | Public URL (see `group_vars/*`, `ckan.site_url`)              |
-|----------------|-----------------------------------------|--------------------------------------------------------------|
-| `validation`   | `serv-ics-fair3r-d-01`                  | `https://validation.fair3r.fr` (DNS in front of reverse proxy) |
-| `integration`  | `serv-ics-fair3r-t-01`                  | `https://fair3r.integration.igbmc.u-strasbg.fr` (DNS in front of reverse proxy) |
-| `production`   | `serv-ics-fair3r-p-02`                  | `https://fair3r.fr` (see `group_vars/production.yml`) |
+install** on one of three target VMs: `validation`, `integration`, and
+`production`. This repo never names a specific organization's hosts or
+domains - every host, site URL and contact address is supplied at deploy
+time via GitLab CI/CD variables (see "Required GitLab CI/CD variables"
+below), so the same pipeline works for any deployment of Fair3R CKAN.
 
 The **`dev`** context is not touched by this folder — developers keep running
 `docker compose up -d --build` from the repo root. See the top-level
@@ -63,11 +61,15 @@ deploy/
 ## Required GitLab CI/CD variables
 
 All of the following must be set in **Settings → CI/CD → Variables** before the
-corresponding `deploy_validation` / `deploy_integration` / `deploy_production` job can succeed. Every one of
-them is a **secret**. Mask **GitLab** and **DataCite** tokens; never log them in jobs.
+corresponding `deploy_validation` / `deploy_integration` / `deploy_production` job can succeed.
 
-| Variable (one per context: `VALIDATION_`, `INTEGRATION_`, or `PRODUCTION_`) | Purpose                                                         |
-|-----------------------------------------------------------------|-----------------------------------------------------------------|
+### Per-context secrets (one value per environment)
+
+Mask these; never log them in jobs. Set one variable per context, prefixed
+`VALIDATION_`, `INTEGRATION_`, or `PRODUCTION_`:
+
+| Variable                                                         | Purpose                                                         |
+|-------------------------------------------------------------------|-----------------------------------------------------------------|
 | `*_CKAN_SESSION_SECRET`                                         | `beaker.session.secret`                                         |
 | `*_CKAN_SECRET_KEY`                                             | Flask `SECRET_KEY`                                              |
 | `*_CKAN_APP_INSTANCE_UUID`                                      | `app_instance_uuid`                                             |
@@ -75,42 +77,64 @@ them is a **secret**. Mask **GitLab** and **DataCite** tokens; never log them in
 | `*_CKAN_DATASTORE_DB_PASSWORD`                                  | Password for the `ckan_datastore` (read-write) role             |
 | `*_CKAN_DATASTORE_READONLY_PASSWORD`                            | Password for the `ckan_datastore_ro` role                       |
 | `*_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`                            | Password of the bootstrap sysadmin user                         |
-| `*_DOI_ACCOUNT_NAME`                                            | DataCite account name (e.g. `CNRS.IGBMC`)                       |
+| `*_DOI_ACCOUNT_NAME`                                            | DataCite account name                                           |
 | `*_DOI_ACCOUNT_PASSWORD`                                        | DataCite account password                                       |
-| `*_DOI_PREFIX`                                                  | DOI prefix (e.g. `10.83249`)                                    |
+| `*_DOI_PREFIX`                                                  | DOI prefix (e.g. `10.12345`)                                    |
 
-## Non-secret configuration (lives in `deploy/ansible/group_vars/`, committed)
+### Per-context identifying values (not secret, but still environment-specific)
 
-These values used to be GitLab CI variables but are now tracked in git:
+Not masked, but set as **environment-scoped** project variables (Settings →
+CI/CD → Variables → "Environment scope" = `validation` / `integration` /
+`production`) so the *same* variable name resolves to a different value per
+deploy job - this is also how each job reaches the right host without this
+repo ever naming it:
 
-- **`group_vars/all.yml`** — values shared by all native-deploy contexts:
-  - `ckan_bootstrap_sysadmin_name` (default `admin`)
-  - `ckan_bootstrap_sysadmin_email` (default `admin@igbmc.u-strasbg.fr`)
-  - `fair3r_enable_fdf_integration` (default `true`)
-  - `ckan_max_resource_size` (default `"10"`, MB; `ckan.max_resource_size` — CKAN's own default when unset).
-  - Infrastructure defaults (paths, ports, plugin list, Solr/Redis URLs, CKAN deb URL).
-- **`group_vars/validation.yml`** — values loaded automatically for any host in `[validation]`:
-  - `ckan_site_url: https://validation.fair3r.fr` (public hostname; `nginx_validation.conf` `server_name` must match)
-  - `contact_mail`, `doi_publisher`, `doi_test_mode: "true"`, `doi_site_title`.
-  - `ckan_max_resource_size: "20"` (explicit override, distinct from the `all.yml` default, to make it easy to confirm a deploy actually picked it up).
+| Variable          | Purpose                                                              |
+|-------------------|-----------------------------------------------------------------------|
+| `SSH_HOST`        | Hostname/IP Ansible deploys to and `ckanext_test.py` SSHes into      |
+| `CKAN_SITE_URL`   | `ckan.site_url`; also used as the GitLab Environment's URL           |
+| `CONTACT_MAIL`    | Address shown on `contact.mail_to` (ckanext-contact)                 |
+| `DOI_PUBLISHER`   | `datacite.publisher` default                                         |
+| `DOI_SITE_TITLE`  | DataCite resource title prefix                                       |
 
-- **`group_vars/integration.yml`** — same pattern for `[integration]`:
-  - `ckan_site_url: https://fair3r.integration.igbmc.u-strasbg.fr` (`nginx_integration.conf` `server_name` must match)
-  - `doi_test_mode: "true"` (DataCite sandbox, like validation).
-  - `ckan_max_resource_size` not overridden here — inherits the `all.yml` default (`"10"`).
+### Shared secrets and identifying values (same across every context)
 
-- **`group_vars/production.yml`** — same keys as `validation.yml`, with
-  `ckan_site_url: https://fair3r.fr`,
-  `doi_test_mode: "false"`, and
-  `ckan_max_resource_size: "100"`.
+| Variable                        | Purpose                                             |
+|----------------------------------|------------------------------------------------------|
+| `CKAN_EMAIL_SMTP_PASSWORD`      | SMTP auth password (secret, mask it)                 |
+| `CKAN_EMAIL_SMTP_SERVER`        | `ckan.smtp.server`, e.g. `smtp.example.org:587`      |
+| `CKAN_EMAIL_SMTP_USER`          | `ckan.smtp.user`                                      |
+| `CKAN_EMAIL_SMTP_MAIL_FROM`     | `ckan.smtp.mail_from`                                 |
+| `CKAN_EMAIL_SMTP_REPLY_TO`      | `ckan.smtp.reply_to`                                  |
+| `CKAN_BOOTSTRAP_SYSADMIN_EMAIL` | Email of the bootstrap sysadmin user                  |
+| `SANDBOX_DOI_ACCOUNT_NAME` / `SANDBOX_DOI_ACCOUNT_PASSWORD` / `SANDBOX_DOI_PREFIX` | DataCite **sandbox** credentials, shared by `integration` and `validation` (production uses its own `PRODUCTION_DOI_*` instead) |
 
-Edit these files and commit; no CI variable change needed. After you change
-`ckan_site_url` (or anything else in [app:main] that CKAN reads only at
-startup), the deploy must **restart `ckan-web` and `ckan-worker`** so the live
-process reloads `/etc/ckan/default/ckan.ini`. The `ckan_config` role notifies;
-`ckan_services` flushes handlers so restarts occur before nginx/verification.
-Without that restart, redirects and `/api/action/status_show` continue to expose
-the previous `site_url`.
+## Non-identifying configuration (lives in `deploy/ansible/group_vars/`, committed)
+
+Everything else non-secret is tracked in git, since none of it identifies a
+specific organization:
+
+- **`group_vars/all.yml`** — shared by every context: `ckan_bootstrap_sysadmin_name`
+  (default `admin`), `fair3r_enable_fdf_integration`, `ckan_max_resource_size`
+  (default `"10"` MB), plus infrastructure defaults (paths, ports, plugin
+  list, Solr/Redis URLs, CKAN deb URL, non-identifying SMTP flags).
+- **`group_vars/validation.yml`** — `ckan_max_resource_size: "20"` (explicit
+  override, distinct from the `all.yml` default, to make it easy to confirm a
+  deploy actually picked it up), `doi_test_mode: "true"`.
+- **`group_vars/integration.yml`** — `doi_test_mode: "true"` (DataCite
+  sandbox, like validation); `ckan_max_resource_size` not overridden, inherits
+  the `all.yml` default.
+- **`group_vars/production.yml`** — `doi_test_mode: "false"` (live DataCite
+  API), `ckan_max_resource_size: "100"`.
+
+Edit these files and commit for non-identifying changes; no CI variable
+change needed. But after changing `ckan_site_url` (whether via a new
+`CKAN_SITE_URL` CI variable or anything else in `[app:main]` that CKAN reads
+only at startup), the deploy must **restart `ckan-web` and `ckan-worker`** so
+the live process reloads `/etc/ckan/default/ckan.ini`. The `ckan_config` role
+notifies; `ckan_services` flushes handlers so restarts occur before
+nginx/verification. Without that restart, redirects and
+`/api/action/status_show` continue to expose the previous `site_url`.
 
 ## How `deploy/ansible_deploy.py` forwards secrets
 
@@ -132,7 +156,7 @@ ansible-galaxy collection install -r deploy/ansible/requirements.yml
 
 python3 deploy/ansible_deploy.py \
   --env validation \
-  --host serv-ics-fair3r-d-01 \
+  --host your-validation-host.example.org \
   --ckan-session-secret "$VALIDATION_CKAN_SESSION_SECRET" \
   --ckan-secret-key "$VALIDATION_CKAN_SECRET_KEY" \
   --ckan-app-instance-uuid "$VALIDATION_CKAN_APP_INSTANCE_UUID" \
@@ -142,15 +166,23 @@ python3 deploy/ansible_deploy.py \
   --ckan-bootstrap-sysadmin-password "$VALIDATION_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD" \
   --doi-account-name "$VALIDATION_DOI_ACCOUNT_NAME" \
   --doi-account-password "$VALIDATION_DOI_ACCOUNT_PASSWORD" \
-  --doi-prefix "$VALIDATION_DOI_PREFIX"
+  --doi-prefix "$VALIDATION_DOI_PREFIX" \
+  --ckan-site-url "https://validation.your-domain.example.org" \
+  --contact-mail "admin@example.org" \
+  --doi-publisher "Your Organization" \
+  --doi-site-title "Your Portal" \
+  --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD" \
+  --ckan-email-smtp-server "smtp.example.org:587" \
+  --ckan-email-smtp-user "no-reply@example.org" \
+  --ckan-email-smtp-mail-from "no-reply@example.org" \
+  --ckan-email-smtp-reply-to "no-reply@example.org" \
+  --ckan-bootstrap-sysadmin-email "admin@example.org"
 ```
 
-Use `--env integration` / `$INTEGRATION_*` for `serv-ics-fair3r-t-01`, or `--env production` /
-`$PRODUCTION_*` for `serv-ics-fair3r-p-02` (secrets and group_vars load from the matching prefix / file).
-
-(Site URL, contact mail, DOI publisher / test_mode / site_title are read from
-`deploy/ansible/group_vars/<context>.yml` and no longer need to be passed on
-the command line.)
+Use `--env integration` / `$INTEGRATION_*`, or `--env production` / `$PRODUCTION_*`
+for the other contexts (secrets and group_vars load from the matching prefix
+/ file); swap `--host` and the identifying flags above for that environment's
+real values.
 
 Add `--check` for a dry-run (adds `--check --diff` to the underlying
 `ansible-playbook` invocation).
@@ -168,7 +200,7 @@ Example (pages — no DB/Solr env exports):
 
 ```bash
 python3 deploy/ckanext_test.py \
-  --host serv-ics-fair3r-t-01 \
+  --host your-integration-host.example.org \
   --ckan-db-password "$INTEGRATION_CKAN_DB_PASSWORD" \
   --ckan-datastore-db-password "$INTEGRATION_CKAN_DATASTORE_DB_PASSWORD" \
   --ckan-datastore-readonly-password "$INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD" \
@@ -195,8 +227,8 @@ Run through these after a `deploy_validation`, `deploy_integration`, or `deploy_
 ## TLS
 
 The nginx configs in `deploy/` are **HTTP-only on port 80** to CKAN
-(`127.0.0.1:8080`). Public HTTPS (for example `https://validation.fair3r.fr`
-with Let's Encrypt) is expected on an **upstream reverse proxy**; you do not
+(`127.0.0.1:8080`). Public HTTPS (e.g. with Let's Encrypt) is expected on an
+**upstream reverse proxy**; you do not
 need certificates under `/etc/letsencrypt` on the VM for that. If you ever
 terminate TLS on this host instead, add `listen 443 ssl` and certificate paths
 here (or use certbot on the VM) and keep `X-Forwarded-Proto` in sync.

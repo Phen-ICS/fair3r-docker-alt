@@ -1,16 +1,18 @@
 ---
-# Per-context non-secret values for the validation VM (serv-ics-fair3r-d-01).
+# Non-identifying per-context values for the validation deploy.
 # Ansible auto-loads this file for any host in the [validation] inventory group.
-# Public URL: DNS must point to the reverse proxy in front of this host.
+#
+# ckan_site_url / contact_mail / doi_publisher / doi_site_title identify the
+# organization, so they're plain -e vars from ansible_deploy.py instead (see
+# CKAN_SITE_URL / CONTACT_MAIL / DOI_PUBLISHER / DOI_SITE_TITLE in CI,
+# supplied per environment via GitLab's environment-scoped project
+# variables) rather than committed here. CKAN_SITE_URL must still resolve to
+# a DNS record pointing at the reverse proxy in front of this host.
 
-ckan_site_url: "https://validation.fair3r.fr"
-contact_mail: "groupe-info-ics@igbmc.fr"
 # Explicitly overridden (not just left at the group_vars/all.yml default of
 # 10) so a deploy makes it easy to confirm this value is actually applied.
 ckan_max_resource_size: "20"
-doi_publisher: "Institut Clinique de la Souris"
 # DOI sandbox.
 doi_test_mode: "true"
-doi_site_title: "Fair3R"
 # Fair3R extension.
 fair3r_enable_fdf_integration: "true"

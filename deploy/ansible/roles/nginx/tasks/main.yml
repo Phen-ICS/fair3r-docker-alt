@@ -17,8 +17,10 @@
     update_cache: yes
 
 - name: Drop Fair3R nginx site config ({{ context }})
-  copy:
+  template:
     # Playbook: deploy/ansible/fair3r_deploy.yml -> repo root: deploy/nginx_<context>.conf
+    # Templated (not a plain copy) so `server_name` comes from ckan_site_url
+    # rather than being hardcoded per organization.
     src: "{{ playbook_dir }}/../nginx_{{ context }}.conf"
     dest: /etc/nginx/sites-available/fair3r
     owner: root

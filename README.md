@@ -70,7 +70,7 @@ In `.env`:
 
 - `FAIR3R_CONTEXT=PRODUCTION` (or `INTEGRATION` / `VALIDATION`)
 - `CKAN_DEBUG` = **false**
-- `GITLAB_EXTENSIONS_PYPI_HOST` (in our case `gitlab.igbmc.u-strasbg.fr`)
+- `GITLAB_EXTENSIONS_PYPI_HOST` (your GitLab instance's hostname, e.g. `gitlab.example.org`)
   - `FAIR3R_EXTENSION_PYPI_TOKEN`
   - `PAGE_EXTENSION_PYPI_TOKEN`
   - `DOI_EXTENSION_PYPI_TOKEN`
@@ -319,9 +319,9 @@ Fair3R runs in four deployment contexts (`dev` plus three native VMs):
 | Context        | Where it runs                                                         | How it is triggered                                                                 |
 |----------------|-----------------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | `dev`          | Developer workstation, Docker Compose stack (the sections above)      | `docker compose up -d --build` from this repo root with a local `.env`              |
-| `validation`   | Ubuntu Noble VM `serv-ics-fair3r-d-01`, native package install        | Manual GitLab CI job **`deploy_validation`**                                        |
-| `integration`  | Ubuntu Noble VM `serv-ics-fair3r-t-01`, native package install      | Manual GitLab CI job **`deploy_integration`**                                       |
-| `production`     | Ubuntu Noble VM `serv-ics-fair3r-p-02`, native package install        | Manual GitLab CI job **`deploy_production`**                                        |
+| `validation`   | Ubuntu Noble VM, native package install        | Manual GitLab CI job **`deploy_validation`**                                        |
+| `integration`  | Ubuntu Noble VM, native package install      | Manual GitLab CI job **`deploy_integration`**                                       |
+| `production`     | Ubuntu Noble VM, native package install        | Manual GitLab CI job **`deploy_production`**                                        |
 
 ### `validation`, `integration`, and `production` (native install on Ubuntu Noble)
 
@@ -360,7 +360,7 @@ The resulting instance is supposed to be **identical** to the `dev` stack:
 
 Requirements:
 
-- A clean Ubuntu 24 Virtual machine (e.g: host "serv-ics-fair3r-d-01")
+- A clean Ubuntu 24 Virtual machine
 - Access without password to the VM. Using SSH key.
 - Ansible installed on the machine running the command.
 
@@ -370,7 +370,7 @@ ansible-galaxy collection install -r deploy/ansible/requirements.yml
 
 python3 deploy/ansible_deploy.py \
   --env validation \
-  --host serv-ics-fair3r-d-01 \
+  --host your-validation-host.example.org \
   --ckan-session-secret ... \
   --ckan-secret-key ... \
   --ckan-db-password ... \
