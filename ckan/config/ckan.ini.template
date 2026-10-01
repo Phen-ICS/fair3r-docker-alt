@@ -4,7 +4,20 @@ debug = ${CKAN_DEBUG}
 [app:main]
 use = egg:ckan
 
-ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view ${CKAN_EXTRA_PLUGINS} contact
+ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view dcat structured_data croissant oaipmh_provider ${CKAN_EXTRA_PLUGINS} contact
+
+# Adds FAIR3R FDF form metadata (creators, subjects, related identifiers...)
+# to the Croissant JSON-LD output. See ckanext.fair3r.lib.fdf.croissant_profile.
+ckanext.dcat.croissant.profiles = fair3r_croissant
+
+# Same, but for the standard DCAT-AP RDF/XML/Turtle/JSON-LD serializations.
+# See ckanext.fair3r.lib.fdf.dcat_ap_profile.
+ckanext.dcat.rdf.profiles = fair3r_dcat_ap
+
+# Same, but for the plain schema.org JSON-LD (Google Dataset Search) block
+# also embedded directly on dataset pages by the "structured_data" plugin.
+# See ckanext.fair3r.lib.fdf.schemaorg_profile.
+ckanext.dcat.structured_data.profiles = fair3r_schemaorg
 
 sqlalchemy.url = postgresql://${CKAN_DB_USER}:${CKAN_DB_PASSWORD}@${CKAN_DB_HOST}:${CKAN_DB_PORT}/${CKAN_DB_NAME}
 solr_url = ${CKAN_SOLR_URL}
