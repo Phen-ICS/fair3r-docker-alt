@@ -227,9 +227,9 @@
   changed_when: true
 
 # ---------------------------------------------------------------------------
-# Final DOI + pages migrations (mirror entrypoint.sh).
+# Final DOI + pages + better_stats migrations (mirror entrypoint.sh).
 # ---------------------------------------------------------------------------
-- name: Upgrade DOI and pages extension databases
+- name: Upgrade DOI, pages and better_stats extension databases
   command: "{{ ckan_venv }}/bin/ckan --config={{ ckan_ini }} db upgrade -p {{ item }}"
   become_user: "{{ ckan_os_user }}"
   environment:
@@ -239,6 +239,7 @@
   loop:
     - doi
     - pages
+    - better_stats
 
 
 # ---------------------------------------------------------------------------

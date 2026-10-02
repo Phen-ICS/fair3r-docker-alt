@@ -371,6 +371,8 @@ ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
 
 ckan --config="$CKAN_INI" db upgrade -p pages
 
+ckan --config="$CKAN_INI" db upgrade -p better_stats
+
 if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
   SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-dev.conf"
 else

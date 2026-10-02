@@ -4,7 +4,7 @@ debug = ${CKAN_DEBUG}
 [app:main]
 use = egg:ckan
 
-ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view dcat structured_data croissant oaipmh_provider ${CKAN_EXTRA_PLUGINS} contact
+ckan.plugins = stats text_view image_view dsaudit activity tabledesigner datatables_view datastore xloader pdf_view dcat structured_data croissant oaipmh_provider better_stats ${CKAN_EXTRA_PLUGINS} contact
 
 # Adds FAIR3R FDF form metadata (creators, subjects, related identifiers...)
 # to the Croissant JSON-LD output. See ckanext.fair3r.lib.fdf.croissant_profile.
