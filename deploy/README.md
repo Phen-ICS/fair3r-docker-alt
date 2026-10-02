@@ -150,13 +150,12 @@ convention used by the ics-standalone-app-template pipeline.
 
 ## Running manually from a developer workstation
 
-`--host` must also be a host that's actually declared under the matching
-`[validation]`/`[integration]`/`[production]` group in
-`deploy/ansible/inventory.ini` - Ansible resolves `hosts: "{{ target_host }}"`
-against the loaded inventory, and also needs that group membership to load
-`group_vars/<context>.yml`. A host not in the inventory silently no-ops
-("Could not match supplied host pattern" / "skipping: no hosts matched",
-reported as a successful job).
+`--host` doesn't need to be declared anywhere in `deploy/ansible/inventory.ini`
+first: the playbook's own first play (`add_host`) registers it into its
+`--env` context's group at runtime, which is also what makes
+`group_vars/<context>.yml` apply to it. `inventory.ini` itself only declares
+the three empty group names (`validation`/`integration`/`production`) - no
+organization's real hostnames are committed anywhere in this repo.
 
 ```bash
 pip install ansible
