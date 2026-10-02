@@ -23,6 +23,8 @@ oaipmh==3.2.1
 rdflib==7.6.0
 pyld==3.3.0
 geomet==1.1.0
+psutil==7.2.2
+-e git+https://github.com/DataShades/ckanext-better-stats.git@d5d82fb25cb3d3423d96514ad1b4cf8eb95f8fd4#egg=ckanext_better_stats
 cachetools==7.2.0
 frozendict==2.4.7
 ckantoolkit==0.0.7

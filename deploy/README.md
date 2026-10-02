@@ -224,7 +224,7 @@ Run through these after a `deploy_validation`, `deploy_integration`, or `deploy_
 3. **Solr core** — `curl -fsS http://127.0.0.1:8983/solr/ckan/admin/ping` returns `"status":"OK"`.
 4. **Postgres** — `sudo -u postgres psql -l` lists `ckan`, `datastore`, `ckan_test`, `datastore_test`.
 5. **systemd** — `systemctl is-active ckan-web ckan-worker nginx` all report `active`.
-6. **status_show** — `curl -fsS https://<host>/api/3/action/status_show` returns `{"success": true, …}`; `result.ckan_version` is `2.11.5`; `result.extensions` includes `xloader`, `pdf_view`, `contact`, `dsaudit`, `fair3r`, `doi`, `pages`, `plotly_explorer`.
+6. **status_show** — `curl -fsS https://<host>/api/3/action/status_show` returns `{"success": true, …}`; `result.ckan_version` is `2.11.5`; `result.extensions` includes `xloader`, `pdf_view`, `contact`, `dsaudit`, `better_stats`, `fair3r`, `doi`, `pages`, `plotly_explorer`.
 7. **Xloader token** — `sudo cat /var/lib/ckan/xloader.token` starts with `eyJ` and differs from the value captured before the deploy.
 8. **Xloader round-trip** — upload a CSV resource through the UI; within a minute the resource's datastore tab should show the ingested rows.
 9. **Admin login** — log in as the bootstrap sysadmin with the current `*_CKAN_BOOTSTRAP_SYSADMIN_PASSWORD`. The password must work on first deploy AND after a re-deploy (idempotency).
