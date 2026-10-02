@@ -23,8 +23,7 @@ deploy/
 ├── nginx_integration.conf        # same pattern as validation for integration VM
 ├── nginx_production.conf         # same pattern + optional proxy_cache
 └── ansible/
-    ├── fair3r_deploy.yml         # Main playbook
-    ├── inventory.ini             # Groups: validation, integration, production
+    ├── fair3r_deploy.yml         # Main playbook (dynamic add_host, no inventory file)
     ├── requirements.yml          # Galaxy collections
     ├── group_vars/all.yml        # Non-secret defaults (paths, ports, names)
     └── roles/
@@ -150,12 +149,12 @@ convention used by the ics-standalone-app-template pipeline.
 
 ## Running manually from a developer workstation
 
-`--host` doesn't need to be declared anywhere in `deploy/ansible/inventory.ini`
-first: the playbook's own first play (`add_host`) registers it into its
-`--env` context's group at runtime, which is also what makes
-`group_vars/<context>.yml` apply to it. `inventory.ini` itself only declares
-the three empty group names (`validation`/`integration`/`production`) - no
-organization's real hostnames are committed anywhere in this repo.
+`--host` doesn't need to be declared anywhere first: `ansible_deploy.py` runs
+`ansible-playbook` with no `-i` at all, and the playbook's own first play
+(`add_host`) registers `--host` into its `--env` context's group at runtime -
+creating that group on the fly - which is also what makes
+`group_vars/<context>.yml` apply to it. No organization's real hostname is
+committed anywhere in this repo.
 
 ```bash
 pip install ansible

@@ -7,12 +7,12 @@ variables and the end-to-end deploy flow.
 
 ## Files
 
-- `fair3r_deploy.yml` — main playbook. First play dynamically `add_host`s the
-  real target (from `target_host`/`context`) into its group; second play
-  resolves per-context secrets via `lookup('vars', context + '_…')` and
-  applies each role in order.
-- `inventory.ini` — just the three empty `[validation]`/`[integration]`/
-  `[production]` group names; no real hostname is ever committed here.
+- `fair3r_deploy.yml` — main playbook, run with no static inventory at all
+  (`ansible_deploy.py` doesn't pass `-i`). First play dynamically `add_host`s
+  the real target (from `target_host`/`context`) into its group - `add_host`
+  creates that group on the fly - so no organization's real hostname is ever
+  committed anywhere in this project. Second play resolves per-context
+  secrets via `lookup('vars', context + '_…')` and applies each role in order.
 - `requirements.yml` — Galaxy collections (`community.postgresql`,
   `community.general`, `ansible.posix`).
 - `group_vars/all.yml` — non-secret defaults (paths, ports, plugin list).
