@@ -11,6 +11,21 @@
 # from GitLab CI variables) into per-context Ansible vars (e.g.
 # validation_ckan_db_password, integration_ckan_db_password, production_ckan_db_password).
 
+- name: Register deploy target host
+  # target_host (from ansible_deploy.py's --host, i.e. the SSH_HOST GitLab CI
+  # variable) is registered into its context's group dynamically here,
+  # instead of requiring it declared in inventory.ini. That file carries no
+  # real hostnames as a result - this organization's only real inventory is
+  # whatever GitLab CI variables say at deploy time.
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Add the target host to its context group
+      add_host:
+        name: "{{ target_host | default('all') }}"
+        groups: "{{ context | default('validation') }}"
+
 - name: Deploy Fair3R CKAN (native package install)
   # `target_host` is always provided by deploy/ansible_deploy.py at runtime.
   # The `| default('all')` fallback exists purely so that static analysis

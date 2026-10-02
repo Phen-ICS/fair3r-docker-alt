@@ -23,8 +23,7 @@ deploy/
 ├── nginx_integration.conf        # same pattern as validation for integration VM
 ├── nginx_production.conf         # same pattern + optional proxy_cache
 └── ansible/
-    ├── fair3r_deploy.yml         # Main playbook
-    ├── inventory.ini             # Groups: validation, integration, production
+    ├── fair3r_deploy.yml         # Main playbook (dynamic add_host, no inventory file)
     ├── requirements.yml          # Galaxy collections
     ├── group_vars/all.yml        # Non-secret defaults (paths, ports, names)
     └── roles/
@@ -150,13 +149,12 @@ convention used by the ics-standalone-app-template pipeline.
 
 ## Running manually from a developer workstation
 
-`--host` must also be a host that's actually declared under the matching
-`[validation]`/`[integration]`/`[production]` group in
-`deploy/ansible/inventory.ini` - Ansible resolves `hosts: "{{ target_host }}"`
-against the loaded inventory, and also needs that group membership to load
-`group_vars/<context>.yml`. A host not in the inventory silently no-ops
-("Could not match supplied host pattern" / "skipping: no hosts matched",
-reported as a successful job).
+`--host` doesn't need to be declared anywhere first: `ansible_deploy.py` runs
+`ansible-playbook` with no `-i` at all, and the playbook's own first play
+(`add_host`) registers `--host` into its `--env` context's group at runtime -
+creating that group on the fly - which is also what makes
+`group_vars/<context>.yml` apply to it. No organization's real hostname is
+committed anywhere in this repo.
 
 ```bash
 pip install ansible

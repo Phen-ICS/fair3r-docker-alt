@@ -125,8 +125,6 @@ def main() -> int:
     # here.
     cmd = [
         "ansible-playbook",
-        "-i",
-        "ansible/inventory.ini",
         "ansible/fair3r_deploy.yml",
         "-e",
         f"context={args.env}",
