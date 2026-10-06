@@ -53,7 +53,7 @@ ckan_datastore_test_db_name: "datastore_test"
 
 # Plugin list mirrors the dev envsubst result. Driven by CKAN_EXTRA_PLUGINS /
 # CKAN_EXTRA_VIEWS in dev; here we default to the same values used in dev.
-ckan_extra_plugins: "fair3r doi pages plotly_explorer"
+ckan_extra_plugins: "fair3r doi pages plotly_explorer citations"
 ckan_extra_views: "plotly_explorer"
 
 # Bootstrap admin user. The name is generic and stays here; the email

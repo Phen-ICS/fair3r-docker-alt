@@ -300,6 +300,22 @@ test:integration:pages:
     paths:
       - report-pages.xml
 
+test:integration:citations:
+  <<: *ckanext_test
+  variables:
+    CKAN_DB_PASSWORD: $INTEGRATION_CKAN_DB_PASSWORD
+    CKAN_DATASTORE_DB_PASSWORD: $INTEGRATION_CKAN_DATASTORE_DB_PASSWORD
+    CKAN_DATASTORE_READONLY_PASSWORD: $INTEGRATION_CKAN_DATASTORE_READONLY_PASSWORD
+    CKAN_TESTS_MODULE: ckanext.citations.tests
+    CKAN_REMOTE_REPORT: /tmp/citations-report.xml
+    CKAN_LOCAL_REPORT: report-citations.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report-citations.xml
+    paths:
+      - report-citations.xml
+
 test:integration:plotly:
   <<: *ckanext_test
   variables:

@@ -43,6 +43,7 @@
     - ckanext-fair3r-pages
     - ckanext-fair3r-doi
     - ckanext-fair3r-plotly
+    - ckanext-citations
   environment:
     PIP_PROGRESS_BAR: "off"
   changed_when: true
