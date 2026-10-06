@@ -144,6 +144,25 @@ fetch:preview:fair3r:
   tags:
     - ics-docker
 
+fetch:preview:citations:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $CITATIONS_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/913/jobs/${CITATIONS_BUILD_JOB_ID}/artifacts"'
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/
+    - echo "PREVIEW_PACKAGE=ckanext-citations" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
 fetch:preview:doi:
   stage: lint
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
@@ -217,6 +236,8 @@ deploy_integration:
     - job: fetch:preview:pages
       optional: true
     - job: fetch:preview:plotly
+      optional: true
+    - job: fetch:preview:citations
       optional: true
   variables:
     CONTEXT: integration
