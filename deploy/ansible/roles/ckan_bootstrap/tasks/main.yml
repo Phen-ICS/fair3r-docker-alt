@@ -263,3 +263,15 @@
     job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} fair3r update-schema"
     user: "{{ ckan_os_user }}"
     state: present
+
+# Weekly citation/impact refresh (ckanext-citations). Sunday 03:00, after the
+# nightly schema update. Idempotent: only datasets not checked in the last 7 days.
+- name: Create cron job for citation refresh
+  ansible.builtin.cron:
+    name: "Refresh citations and impact indices"
+    minute: "0"
+    hour: "3"
+    weekday: "0"
+    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} citations refresh"
+    user: "{{ ckan_os_user }}"
+    state: present
