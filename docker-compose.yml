@@ -69,6 +69,7 @@ services:
     build:
       context: ./ckan
       args:
+        CKAN_BASE_IMAGE: ${CKAN_BASE_IMAGE:-ckan/ckan-base}
         CKAN_VERSION: ${CKAN_VERSION}
         FAIR3R_CONTEXT: ${FAIR3R_CONTEXT}
     container_name: ckan-app

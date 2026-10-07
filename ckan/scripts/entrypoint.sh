@@ -373,6 +373,8 @@ ckan --config="$CKAN_INI" db upgrade -p pages
 
 ckan --config="$CKAN_INI" db upgrade -p better_stats
 
+ckan --config="$CKAN_INI" db upgrade -p citations
+
 if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
   SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-dev.conf"
 else
