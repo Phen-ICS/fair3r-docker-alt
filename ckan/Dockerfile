@@ -1,5 +1,10 @@
+# CKAN_BASE_IMAGE defaults to the public upstream image. DEV overrides it in
+# .env to point at a locally-built image (see ckan-docker-base/ckan-2.12) when
+# the public ckan/ckan-base:2.12.0 tag ships a newer Python than we want to
+# pin (it currently ships Python 3.14; we pin 3.12 to match production).
+ARG CKAN_BASE_IMAGE=ckan/ckan-base
 ARG CKAN_VERSION=2.12.0
-FROM ckan/ckan-base:${CKAN_VERSION}
+FROM ${CKAN_BASE_IMAGE}:${CKAN_VERSION}
 
 #Build args
 ARG FAIR3R_CONTEXT=""
