@@ -380,6 +380,7 @@ echo "=== Set Zenodo Configuration ==="
 [ -n "${ZENODO_ACCESS_TOKEN:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.access_token = ${ZENODO_ACCESS_TOKEN:-}"
 [ -n "${ZENODO_COMMUNITY_IDENTIFIER:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.community_identifier = ${ZENODO_COMMUNITY_IDENTIFIER:-}"
 [ -n "${ZENODO_TEST_MODE:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.test_mode = ${ZENODO_TEST_MODE:-}"
+[ -n "${ZENODO_DISK_SAFETY_MARGIN_BYTES:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.disk_safety_margin_bytes = ${ZENODO_DISK_SAFETY_MARGIN_BYTES:-}"
 
 ckan --config="$CKAN_INI" db upgrade -p zenodo
 
