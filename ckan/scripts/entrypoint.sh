@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# `ckan db upgrade -p <plugin>` aborts for a plugin that isn't enabled
+# ("Plugin '<plugin>' cannot be loaded"), which with `set -e` stops the
+# container - so each extension's migration only runs if it's in
+# CKAN_EXTRA_PLUGINS (better_stats is always on, see ckan.ini.template).
+plugin_enabled() {
+  case " ${CKAN_EXTRA_PLUGINS:-} " in
+    *" $1 "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+upgrade_plugin_db() {
+  if plugin_enabled "$1"; then
+    ckan --config="$CKAN_INI" db upgrade -p "$1"
+  else
+    echo "Skipping db upgrade -p $1 (not in CKAN_EXTRA_PLUGINS)"
+  fi
+}
+
 wait_for_service() {
   local host="$1"
   local port="$2"
@@ -361,7 +380,7 @@ echo "=== Set DOI Configuration ==="
 [ -n "$DOI_TEST_MODE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.test_mode = ${DOI_TEST_MODE}"
 [ -n "$DOI_SITE_TITLE" ] && ckan config-tool "$CKAN_INI" "ckanext.doi.site_title = ${DOI_SITE_TITLE}"
 
-ckan --config="$CKAN_INI" db upgrade -p doi
+upgrade_plugin_db doi
 
 echo "=== Set Pages Configuration ==="
 ckan config-tool "$CKAN_INI" "ckanext.pages.organization = True"
@@ -369,11 +388,11 @@ ckan config-tool "$CKAN_INI" "ckanext.pages.group = True"
 ckan config-tool "$CKAN_INI" "ckanext.pages.allow_html = True"
 ckan config-tool "$CKAN_INI" "ckanext.pages.editor = ckeditor"
 
-ckan --config="$CKAN_INI" db upgrade -p pages
+upgrade_plugin_db pages
 
 ckan --config="$CKAN_INI" db upgrade -p better_stats
 
-ckan --config="$CKAN_INI" db upgrade -p citations
+upgrade_plugin_db citations
 
 echo "=== Set Zenodo Configuration ==="
 [ -n "${ZENODO_SANDBOX_ACCESS_TOKEN:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.sandbox_access_token = ${ZENODO_SANDBOX_ACCESS_TOKEN:-}"
@@ -382,7 +401,7 @@ echo "=== Set Zenodo Configuration ==="
 [ -n "${ZENODO_TEST_MODE:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.test_mode = ${ZENODO_TEST_MODE:-}"
 [ -n "${ZENODO_DISK_SAFETY_MARGIN_BYTES:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.disk_safety_margin_bytes = ${ZENODO_DISK_SAFETY_MARGIN_BYTES:-}"
 
-ckan --config="$CKAN_INI" db upgrade -p zenodo
+upgrade_plugin_db zenodo
 
 if [ "${FAIR3R_CONTEXT}" = "DEV" ]; then
   SUPERVISORD_CONFIG="/etc/supervisor/conf.d/ckan-supervisord-dev.conf"
