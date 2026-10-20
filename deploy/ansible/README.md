@@ -1,9 +1,10 @@
 # Ansible playbook — Fair3R CKAN native deploy
 
 Modular Ansible project that installs a Fair3R CKAN instance from the
-official `python-ckan_2.11-noble_amd64.deb` package on a single Ubuntu
-Noble VM. See [`../README.md`](../README.md) for required GitLab CI
-variables and the end-to-end deploy flow.
+official `python-ckan_2.12-noble_amd64.deb` package on a single Ubuntu
+Noble VM. See [docs/deploy-ansible.md](../../docs/deploy-ansible.md) for
+requirements, GitLab CI variables and the deploy flow, and
+[`../README.md`](../README.md) for the technical reference.
 
 ## Files
 
@@ -22,12 +23,12 @@ variables and the end-to-end deploy flow.
 |-------------------|---------------------------------------------------------------------|
 | `system`          | apt baseline, locales, timezone, Java for Solr                       |
 | `postgres`        | PostgreSQL + roles (`ckan`, `ckan_datastore`, `ckan_datastore_ro`) + databases (`ckan`, `datastore`, `ckan_test`, `datastore_test`) |
-| `solr`            | Solr 9, `ckan` core, CKAN 2.11 schema                                |
+| `solr`            | Solr 9, `ckan` core, CKAN 2.12 schema                                |
 | `redis`           | `redis-server` bound to loopback                                    |
 | `ckan_package`    | Download + `dpkg -i` the CKAN deb, disable apache2, neutralise supervisord configs |
-| `ckan_extensions` | pip-install into `/usr/lib/ckan/default`: xloader, pdfview, contact, dsaudit, + Our curstom ext from **GitLab Package Registry PyPI** (see `group_vars/all.yml` + CI token) |
+| `ckan_extensions` | pip-install into `/usr/lib/ckan/default`: the pinned `ckan/requirements.txt` (xloader, pdfview, contact, dsaudit, dcat, oaipmh, better-stats...) and the FAIR3R extensions from public PyPI (ckanext-zenodo only if `zenodo_enabled`), or an extension merge request's own wheel in its integration pipeline |
 | `ckan_config`     | envsubst-render `/etc/ckan/default/ckan.ini` from the repo's `ckan/config/ckan.ini.template` |
-| `ckan_bootstrap`  | Port of `ckan/scripts/entrypoint.sh`: db init/upgrade, datastore permissions, sysadmin bootstrap, Xloader token rotation, extension config-tool settings, DOI + pages migrations |
+| `ckan_bootstrap`  | Port of `ckan/scripts/entrypoint.sh`: db init/upgrade, datastore permissions, sysadmin bootstrap, Xloader token rotation, extension config-tool settings and migrations, cron jobs (FDF schema, citations, Zenodo retries) |
 | `ckan_services`   | Install systemd units `ckan-web.service` and `ckan-worker.service`, enable + start |
 | `nginx`           | Install `fair3r` site, templated from `deploy/nginx_{context}.conf` (`server_name` comes from `CKAN_SITE_URL`), remove default/ckan sites, reload |
 | `verification`    | Smoke test: `/api/3/action/status_show` returns 200 and success, systemd units active |
