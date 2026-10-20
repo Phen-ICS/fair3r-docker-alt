@@ -124,7 +124,8 @@ ansible_lint:
 # Requires each extension project's Job Token allowlist to include this
 # project (Settings -> CI/CD -> Job token permission). Project IDs (from the
 # old group_vars/all.yml mapping):
-# ckanext-fair3r=862, ckanext-doi=860, ckanext-pages=863, ckanext-plotly=891.
+# ckanext-fair3r=862, ckanext-doi=860, ckanext-pages=863, ckanext-plotly=891,
+# ckanext-citations=913, ckanext-zenodo=916.
 # --------------------------------------------------------------------------
 
 fetch:preview:fair3r:
@@ -157,6 +158,25 @@ fetch:preview:citations:
     - python3 -m zipfile -e artifacts.zip .
     - cp dist/*.whl preview/
     - echo "PREVIEW_PACKAGE=ckanext-citations" > preview/override.env
+    - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
+  artifacts:
+    paths:
+      - preview/
+    expire_in: 1 hour
+  tags:
+    - ics-docker
+
+fetch:preview:zenodo:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  rules:
+    - if: $ZENODO_PLUGIN_REF
+  script:
+    - mkdir -p preview dist
+    - 'curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" -o artifacts.zip "${CI_API_V4_URL}/projects/916/jobs/${ZENODO_BUILD_JOB_ID}/artifacts"'
+    - python3 -m zipfile -e artifacts.zip .
+    - cp dist/*.whl preview/
+    - echo "PREVIEW_PACKAGE=ckanext-zenodo" > preview/override.env
     - echo "PREVIEW_WHEEL=$(basename dist/*.whl)" >> preview/override.env
   artifacts:
     paths:
@@ -240,6 +260,8 @@ deploy_integration:
     - job: fetch:preview:plotly
       optional: true
     - job: fetch:preview:citations
+      optional: true
+    - job: fetch:preview:zenodo
       optional: true
   variables:
     CONTEXT: integration
