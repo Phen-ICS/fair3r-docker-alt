@@ -66,6 +66,11 @@
           doi_account_password: "{{ lookup('vars', context + '_doi_account_password') }}"
           doi_prefix: "{{ lookup('vars', context + '_doi_prefix') }}"
 
+          # Zenodo account (ckanext-zenodo). Optional: only contexts with
+          # zenodo_enabled get them from CI (see the assert below).
+          zenodo_access_token: "{{ lookup('vars', context + '_zenodo_access_token', default='') }}"
+          zenodo_community_identifier: "{{ lookup('vars', context + '_zenodo_community_identifier', default='') }}"
+
           # email SMTP settings. server/user/mail_from/reply_to identify the
           # organization, so (like the secrets above) they're passed as
           # plain -e vars by ansible_deploy.py rather than committed here;
@@ -112,6 +117,14 @@
           - env_config.doi_account_password | length > 0
           - env_config.ckan_site_url | length > 0
         fail_msg: "One or more required per-context variables are missing. Check GitLab CI variables for context '{{ context }}', and group_vars/{{ context }}.yml for non-secrets."
+
+    - name: Assert the Zenodo account is present where ckanext-zenodo is enabled
+      assert:
+        that:
+          - env_config.zenodo_access_token | length > 0
+          - env_config.zenodo_community_identifier | length > 0
+        fail_msg: "zenodo_enabled is true for '{{ context }}' but ZENODO_ACCESS_TOKEN / ZENODO_COMMUNITY_IDENTIFIER are empty - check its GitLab CI variables."
+      when: zenodo_enabled | bool
 
   roles:
     - system

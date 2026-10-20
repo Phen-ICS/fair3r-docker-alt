@@ -56,6 +56,17 @@ ckan_datastore_test_db_name: "datastore_test"
 ckan_extra_plugins: "fair3r doi pages plotly_explorer citations"
 ckan_extra_views: "plotly_explorer"
 
+# ckanext-zenodo: off unless a context switches it on in
+# group_vars/<context>.yml. Turning it on installs the package, enables the
+# plugin together with the core audio_view/video_view plugins its file
+# previews use (image_view and pdf_view are already in ckan.ini.template),
+# writes its settings and adds its retry cron (see ckan_bootstrap). Token
+# and community come from CI (ZENODO_ACCESS_TOKEN /
+# ZENODO_COMMUNITY_IDENTIFIER), like the DOI account.
+zenodo_enabled: false
+# sandbox.zenodo.org unless a context says otherwise.
+zenodo_test_mode: "true"
+
 # Bootstrap admin user. The name is generic and stays here; the email
 # identifies the organization, so it's a plain -e var from
 # ansible_deploy.py instead (see CKAN_BOOTSTRAP_SYSADMIN_EMAIL in CI).
