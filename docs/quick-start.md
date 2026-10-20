@@ -40,25 +40,22 @@ cd fair3r-docker-alt
 cp .env.example .env
 ```
 
-Then edit `.env` and set:
+Then edit `.env` and set your administrator account, created at startup:
 
 ```ini
-# Your administrator account, created at startup
 CKAN_BOOTSTRAP_SYSADMIN_NAME=admin
 CKAN_BOOTSTRAP_SYSADMIN_EMAIL=admin@example.org
 CKAN_BOOTSTRAP_SYSADMIN_PASSWORD=choose-a-password
-
-# No DataCite account? Leave doi out - otherwise making a dataset public fails.
-CKAN_EXTRA_PLUGINS=fair3r pages plotly_explorer citations
 ```
 
-Set the administrator account: besides letting you log in, it's what the
-loader of CSV files into the data viewer (xloader) runs as - without it,
-uploaded CSV files show no data.
+Besides letting you log in, it's what the loader of CSV files into the
+data viewer (xloader) runs as - without it, uploaded CSV files show no
+data.
 
-Everything else can stay as it is. The full list of settings is in
-[configuration.md](configuration.md), including the optional services
-(DataCite DOIs, Zenodo, email).
+Everything else can stay as it is: the default works without any
+external account. DataCite DOIs, Zenodo and email are
+[optional services](#optional-services) you add once you have an
+account; all settings are in [configuration.md](configuration.md).
 
 ### 3. Start
 
@@ -151,11 +148,18 @@ form schema: [development.md](development.md).
 
 ## Optional services
 
-| Service | Needed for | How |
-|---|---|---|
-| DataCite | Minting a DOI when a dataset is made public | A DataCite test account; set `DOI_*` in `.env` and add `doi` back to `CKAN_EXTRA_PLUGINS` |
-| Zenodo | Storing large files on Zenodo | A token from [sandbox.zenodo.org](https://sandbox.zenodo.org/) and a community; set `ZENODO_*` and add `zenodo audio_view video_view` to `CKAN_EXTRA_PLUGINS` |
-| Email | Password reset, notifications | An SMTP server; set `CKAN_EMAIL_SMTP_*` |
+Each one needs an account with the service. Not enabled by default.
+
+| Service | Needed for | Account | Enable in `.env` |
+|---|---|---|---|
+| DataCite | A DOI for each dataset made public | DataCite test account (repository) | Set `DOI_*`, add `doi` to `CKAN_EXTRA_PLUGINS` |
+| Zenodo | Storing large or non-tabular files on Zenodo | Token from [sandbox.zenodo.org](https://sandbox.zenodo.org/), and a community | Set `ZENODO_*`, add `zenodo audio_view video_view` to `CKAN_EXTRA_PLUGINS` |
+| Email | Password reset, notifications | An SMTP server | Set `CKAN_EMAIL_SMTP_*` |
+
+Then `docker compose up -d`. With `doi` enabled, making a dataset public
+needs a working DataCite account. Zenodo stays out of the way until its
+token is set: `docker compose exec ckan ckan -c /srv/app/ckan.ini zenodo check`
+tells what's missing.
 
 ## When it doesn't start
 
@@ -164,6 +168,6 @@ form schema: [development.md](development.md).
 | `port is already allocated` | Another program uses 5000, 8085 or 5435: change `CKAN_PORT`, `NGINX_SSLPORT_HOST` or `CKAN_DB_PORT_EXT` in `.env` |
 | `ckan-app` restarts in a loop | `docker compose logs ckan` shows the failing step - often a typo in `.env` or in `CKAN_EXTRA_PLUGINS` |
 | CSV files show no data | `CKAN_BOOTSTRAP_SYSADMIN_*` not set, then `docker compose up -d` |
-| Making a dataset public fails with a DataCite error | `doi` is enabled without a DataCite account - remove it from `CKAN_EXTRA_PLUGINS` |
+| Making a dataset public fails with a DataCite error | `doi` is enabled but the `DOI_*` account settings are missing or wrong |
 | My code changes don't show | `FAIR3R_CONTEXT=DEV` in `.env`, the clone in `src_extensions/`, then `docker compose up -d --build` |
 | Start over from scratch | `docker compose down -v`, then `docker compose up -d --build` |

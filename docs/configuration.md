@@ -59,7 +59,7 @@ The test databases are created for the extensions' test suites.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `CKAN_EXTRA_PLUGINS` | `fair3r doi pages plotly_explorer citations` | Plugins enabled on top of the base list (CKAN core views, DataStore, xloader, DCAT, OAI-PMH, statistics, contact...). Each one's database migration runs only if it's listed |
+| `CKAN_EXTRA_PLUGINS` | `fair3r pages plotly_explorer citations` | Plugins enabled on top of the base list (CKAN core views, DataStore, xloader, DCAT, OAI-PMH, statistics, contact...). Each one's database migration runs only if it's listed. The default needs no external account; add `doi` and `zenodo audio_view video_view` with their accounts (below). The servers enable `doi` too (`deploy/ansible/group_vars/all.yml`) |
 | `CKAN_EXTRA_VIEWS` | `plotly_explorer` | Views created automatically for new resources |
 | `CKAN_MAX_RESOURCE_SIZE` | `100` | Largest file stored in CKAN, in MB. With Zenodo enabled, larger files go to Zenodo |
 
@@ -87,8 +87,9 @@ in `src_extensions/` still wins.
 ### DataCite DOIs (ckanext-doi)
 
 Needs a DataCite account (a test account for anything but production).
-Without one, leave `doi` out of `CKAN_EXTRA_PLUGINS`: with the plugin on
-and no account, making a dataset public fails.
+Enable with `doi` in `CKAN_EXTRA_PLUGINS`, once the settings below are
+filled in: with the plugin on and no account, making a dataset public
+fails.
 
 | Variable | Meaning |
 |---|---|
@@ -101,8 +102,10 @@ and no account, making a dataset public fails.
 ### Zenodo (ckanext-zenodo)
 
 Stores large or non-tabular files on Zenodo. Enable with
-`zenodo audio_view video_view` in `CKAN_EXTRA_PLUGINS`. Full reference in
-ckanext-zenodo's own documentation.
+`zenodo audio_view video_view` in `CKAN_EXTRA_PLUGINS`. Without a token
+for the current mode it stays out of the way (every file stays in CKAN).
+Full reference in
+[ckanext-zenodo's documentation](https://github.com/Phen-ICS/ckanext-zenodo/blob/main/docs/README.md).
 
 | Variable | Meaning |
 |---|---|

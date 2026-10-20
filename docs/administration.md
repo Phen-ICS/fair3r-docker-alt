@@ -79,7 +79,7 @@ rebuilt from anything else.
 |---|---|
 | Site down after a configuration change | CKAN logs: a typo in a setting, or a plugin in the list that isn't installed |
 | CSV files without data in the viewer | Background worker running? Administrator account configured (xloader uses it)? `ckan jobs list` |
-| Making a dataset public fails with a DataCite error | DataCite account settings; in a test setup without an account, disable the `doi` plugin |
+| Making a dataset public fails with a DataCite error | DataCite account settings (`DOI_*`, or the CI variables on servers); without an account, don't enable the `doi` plugin |
 | A published dataset has no DOI | CKAN logs (DOIs are minted while the dataset is saved); DataCite account and prefix |
 | Zenodo files stay "being archived" | `ckan zenodo check`, worker logs, then `ckan zenodo retry-pending` |
 | Search doesn't find a dataset that exists | `ckan search-index rebuild` |

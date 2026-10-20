@@ -25,7 +25,7 @@ With Docker and git installed:
 
 ```bash
 git clone https://github.com/Phen-ICS/fair3r-docker-alt.git && cd fair3r-docker-alt
-cp .env.example .env   # then set the administrator account and plugin list: docs/quick-start.md, step 2
+cp .env.example .env   # then set the administrator account: docs/quick-start.md, step 2
 docker compose up -d --build
 ```
 
