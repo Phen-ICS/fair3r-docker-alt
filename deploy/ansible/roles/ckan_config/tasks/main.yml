@@ -45,7 +45,7 @@
     CKAN_DATASTORE_READONLY_PASSWORD: "{{ env_config.ckan_datastore_readonly_password }}"
     CKAN_XLOADER_JOBS_DB_URI: "postgresql://{{ ckan_db_user }}:{{ env_config.ckan_db_password }}@{{ ckan_db_host }}:{{ ckan_db_port }}/{{ ckan_db_name }}"
     CKAN_INTERNAL_SITE_URL: "{{ ckan_internal_site_url }}"
-    CKAN_EXTRA_PLUGINS: "{{ ckan_extra_plugins }}"
+    CKAN_EXTRA_PLUGINS: "{{ ckan_extra_plugins }}{{ ' zenodo audio_view video_view' if zenodo_enabled | bool else '' }}"
     CKAN_EXTRA_VIEWS: "{{ ckan_extra_views }}"
     CKAN_EMAIL_SMTP_SERVER: "{{ env_config.ckan_email_smtp_server }}"
     CKAN_EMAIL_SMTP_STARTTLS: "{{ env_config.ckan_email_smtp_starttls }}"

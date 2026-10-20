@@ -11,3 +11,6 @@
 # DOI sandbox (same as validation).
 doi_test_mode: "true"
 fair3r_enable_fdf_integration: "true"
+# ckanext-zenodo on sandbox.zenodo.org (see group_vars/all.yml).
+zenodo_enabled: true
+zenodo_test_mode: "true"
