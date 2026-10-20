@@ -15,22 +15,22 @@ Redis and nginx.
 
 | I want to... | Use | Guide |
 |---|---|---|
-| **Try it** or **work on it** on my own machine | Docker Compose | [docs/quick-start.md](docs/quick-start.md) |
+| **Try it** on my own machine | Docker Compose, extensions from PyPI | [docs/quick-start.md](docs/quick-start.md#try-it) |
+| **Work on the code** of an extension | Docker Compose, with my clones in `src_extensions/` | [docs/quick-start.md](docs/quick-start.md#work-on-the-code) |
 | **Install it on servers** (integration, validation, production) | Ansible, from GitLab CI or by hand | [docs/deploy-ansible.md](docs/deploy-ansible.md) |
 
-### Try it in 4 commands
+### Try it in 3 commands
 
 With Docker and git installed:
 
 ```bash
 git clone https://github.com/Phen-ICS/fair3r-docker-alt.git && cd fair3r-docker-alt
-for r in ckanext-fair3r ckanext-doi ckanext-pages ckanext-plotly ckanext-citations ckanext-zenodo; do git clone "https://github.com/Phen-ICS/$r.git" "src_extensions/$r"; done
-cp .env.example .env   # then set the few values listed in docs/quick-start.md, step 3
+cp .env.example .env   # then set the administrator account and plugin list: docs/quick-start.md, step 2
 docker compose up -d --build
 ```
 
-Then open http://localhost:5000. Step-by-step instructions, what to put
-in `.env` and what to do if it doesn't start: [docs/quick-start.md](docs/quick-start.md).
+Then open http://localhost:5000. Step-by-step instructions, the developer
+setup and what to do if it doesn't start: [docs/quick-start.md](docs/quick-start.md).
 
 ## Documentation
 
@@ -52,7 +52,7 @@ in `.env` and what to do if it doesn't start: [docs/quick-start.md](docs/quick-s
 | `nginx/` | nginx image for the Docker stack |
 | `deploy/` | Ansible deployment for the servers, and its CI helpers |
 | `.gitlab-ci.yml` | Pipeline: lint, deploy to integration and test, deploy to validation and production |
-| `src_extensions/` | Your clones of the FAIR3R extensions (not part of this repository) |
+| `src_extensions/` | Your clones of the extensions you work on (not part of this repository); they replace the PyPI releases in DEV |
 
 ## The FAIR3R extensions
 

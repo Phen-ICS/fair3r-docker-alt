@@ -17,7 +17,7 @@ container); `docker compose restart` doesn't re-read `.env`.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `FAIR3R_CONTEXT` | `PRODUCTION` | `DEV`: extensions installed from `src_extensions/` in editable mode, code reloader, development tools in the image. `INTEGRATION` / `VALIDATION` / `PRODUCTION`: production process settings, extensions from a package registry (see below). Also passed to the FAIR3R extension. |
+| `FAIR3R_CONTEXT` | `PRODUCTION` | `DEV`: clones in `src_extensions/` replace the extensions' PyPI releases (editable installs), code reloader, development tools in the image. `INTEGRATION` / `VALIDATION` / `PRODUCTION`: production process settings, the PyPI releases built into the image. Also passed to the FAIR3R extension. |
 | `CKAN_DEBUG` | `false` | `true` for development only (debug toolbar, detailed errors) |
 | `CKAN_VERSION` | `2.12.0` | Tag of the CKAN base image |
 | `CKAN_BASE_IMAGE` | `ckan/ckan-base` | Base image name - see [development.md](development.md#python-version) to match production's Python |
@@ -63,11 +63,13 @@ The test databases are created for the extensions' test suites.
 | `CKAN_EXTRA_VIEWS` | `plotly_explorer` | Views created automatically for new resources |
 | `CKAN_MAX_RESOURCE_SIZE` | `100` | Largest file stored in CKAN, in MB. With Zenodo enabled, larger files go to Zenodo |
 
-Optional private package registry (only if you have access to a GitLab
-instance that publishes the FAIR3R extensions; otherwise leave the tokens
-empty): `GITLAB_EXTENSIONS_PYPI_HOST`, `*_EXTENSION_PYPI_TOKEN`,
-`*_PYPI_PROJECT_ID`. When a token is set, that extension is installed from
-the registry at startup; in `DEV`, a copy in `src_extensions/` still wins.
+The FAIR3R extensions' PyPI releases are built into the image
+(`ckan/fair3r-extensions.txt`). Optional private package registry, only
+if you have access to a GitLab instance that publishes them; otherwise
+leave the tokens empty: `GITLAB_EXTENSIONS_PYPI_HOST`,
+`*_EXTENSION_PYPI_TOKEN`, `*_PYPI_PROJECT_ID`. When a token is set, that
+extension is reinstalled from the registry at startup; in `DEV`, a clone
+in `src_extensions/` still wins.
 
 ### FAIR3R (ckanext-fair3r)
 

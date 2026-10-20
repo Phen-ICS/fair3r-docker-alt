@@ -23,10 +23,13 @@ there.
 
 ## How DEV mode works
 
+- The image already contains every FAIR3R extension's latest PyPI release
+  (`ckan/fair3r-extensions.txt`).
 - `src_extensions/` is mounted at `/plugins` in the `ckan` container. At
-  each start, every folder in it with a `setup.py` or `pyproject.toml` is
-  installed in editable mode (`pip install -e`), so your working copy is
-  what runs.
+  each start, with `FAIR3R_CONTEXT=DEV`, every folder in it with a
+  `setup.py` or `pyproject.toml` is installed in editable mode
+  (`pip install -e`), replacing that extension's release - so your
+  working copy is what runs. Clone only the extensions you work on.
 - CKAN runs with its reloader: Python changes restart it, template
   changes show on the next page load. A change to `ckan.ini` settings,
   `.env` or the plugin list needs `docker compose up -d`.

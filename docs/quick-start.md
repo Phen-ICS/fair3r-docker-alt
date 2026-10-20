@@ -1,14 +1,21 @@
-# Quick start: try FAIR3R on your machine
+# Quick start: run FAIR3R on your machine
 
 This runs the whole catalogue - CKAN 2.12 with the FAIR3R extensions,
-PostgreSQL, Solr, Redis and nginx - in Docker on your own machine, to try
-it out or to work on it. The first start takes around 10 minutes (image
-build); later ones, about a minute.
+PostgreSQL, Solr, Redis and nginx - in Docker on your own machine. The
+first start takes around 10 minutes (image build); later ones, about a
+minute.
+
+Two ways to run it:
+
+| | You want to... | Extensions come from |
+|---|---|---|
+| **[Try it](#try-it)** | See and use the catalogue | Their releases on PyPI, built into the image - nothing else to download |
+| **[Work on the code](#work-on-the-code)** | Change an extension and see the result | Your own clones in `src_extensions/`, replacing the PyPI releases |
 
 Nothing here is meant for a public server: use [deploy-ansible.md](deploy-ansible.md)
 for that.
 
-## 1. What you need
+## What you need
 
 - **Docker** with the Compose plugin (`docker compose version` works).
 - **git**.
@@ -18,25 +25,16 @@ for that.
 - Internet access during the first start (images, Python packages, the
   FDF form schema).
 
-## 2. Get the code
+## Try it
 
-The deployment repository, then the FAIR3R extensions inside its
-`src_extensions/` folder (mounted into the container and installed from
-there):
+### 1. Get the code
 
 ```bash
 git clone https://github.com/Phen-ICS/fair3r-docker-alt.git
 cd fair3r-docker-alt
-
-for repo in ckanext-fair3r ckanext-doi ckanext-pages ckanext-plotly ckanext-citations ckanext-zenodo; do
-  git clone "https://github.com/Phen-ICS/${repo}.git" "src_extensions/${repo}"
-done
 ```
 
-The folder names don't have to match the package names
-(`src_extensions/ckanext-doi` installs `ckanext-fair3r-doi`, and so on).
-
-## 3. Configure
+### 2. Configure
 
 ```bash
 cp .env.example .env
@@ -45,10 +43,6 @@ cp .env.example .env
 Then edit `.env` and set:
 
 ```ini
-# Development mode: extensions installed from src_extensions/, code reloads
-FAIR3R_CONTEXT=DEV
-CKAN_DEBUG=true
-
 # Your administrator account, created at startup
 CKAN_BOOTSTRAP_SYSADMIN_NAME=admin
 CKAN_BOOTSTRAP_SYSADMIN_EMAIL=admin@example.org
@@ -59,24 +53,20 @@ CKAN_EXTRA_PLUGINS=fair3r pages plotly_explorer citations
 ```
 
 Set the administrator account: besides letting you log in, it's what the
-background loader of CSV files (xloader) runs as - without it, uploaded
-CSV files aren't loaded into the data viewer.
+loader of CSV files into the data viewer (xloader) runs as - without it,
+uploaded CSV files show no data.
 
-Everything else can stay as it is for a local try. The full list of
-settings is in [configuration.md](configuration.md); the optional services
-(DataCite DOIs, Zenodo, email) are described there too.
+Everything else can stay as it is. The full list of settings is in
+[configuration.md](configuration.md), including the optional services
+(DataCite DOIs, Zenodo, email).
 
-## 4. Start
+### 3. Start
 
 ```bash
 docker compose up -d --build
 ```
 
-`docker compose` automatically adds `docker-compose.override.yml`, which
-holds the development settings (the `src_extensions/` mount, CKAN's port
-5000, the database port).
-
-Follow the startup until CKAN reports it's ready:
+Follow the startup until CKAN is ready:
 
 ```bash
 docker compose logs -f ckan
@@ -86,29 +76,78 @@ The first start builds the image, creates the databases and the
 administrator, and downloads the FDF form schema. `docker compose ps`
 shows `ckan-app` as `healthy` when it's done.
 
-## 5. Use it
+### 4. Use it
 
 - **http://localhost:5000** - CKAN directly (simplest).
 - **https://localhost:8085** - through nginx, as on a server. The
-  certificate is self-signed: your browser will warn you the first time.
+  certificate is self-signed: your browser warns about it the first time.
 
 Log in with the administrator account from `.env`. To try the catalogue:
 create an organization, then a dataset (the FAIR3R metadata form), add a
 CSV file, and make the dataset public.
 
-## 6. Day-to-day commands
+## Work on the code
+
+Same as above, plus a clone of each extension you want to change in
+`src_extensions/`. At each start, the container installs every clone
+found there in editable mode, replacing that extension's PyPI release;
+the others keep their release.
+
+### 1. Clone what you'll work on
+
+```bash
+git clone https://github.com/Phen-ICS/fair3r-docker-alt.git
+cd fair3r-docker-alt
+
+# Only the ones you'll change - for example:
+git clone https://github.com/Phen-ICS/ckanext-fair3r.git src_extensions/ckanext-fair3r
+```
+
+| Repository | Folder in `src_extensions/` |
+|---|---|
+| [ckanext-fair3r](https://github.com/Phen-ICS/ckanext-fair3r) | `ckanext-fair3r` |
+| [ckanext-doi](https://github.com/Phen-ICS/ckanext-doi) | `ckanext-doi` |
+| [ckanext-pages](https://github.com/Phen-ICS/ckanext-pages) | `ckanext-pages` |
+| [ckanext-plotly](https://github.com/Phen-ICS/ckanext-plotly) | `ckanext-plotly` |
+| [ckanext-citations](https://github.com/Phen-ICS/ckanext-citations) | `ckanext-citations` |
+| [ckanext-zenodo](https://github.com/Phen-ICS/ckanext-zenodo) | `ckanext-zenodo` |
+
+The folder name doesn't matter - the package inside does
+(`src_extensions/ckanext-doi` replaces `ckanext-fair3r-doi`).
+
+### 2. Configure
+
+As in [Try it](#2-configure), plus development mode:
+
+```ini
+FAIR3R_CONTEXT=DEV
+CKAN_DEBUG=true
+```
+
+### 3. Start
+
+```bash
+docker compose up -d --build
+```
+
+`docker compose` automatically adds `docker-compose.override.yml`, which
+mounts `src_extensions/` into the container (at `/plugins`).
+
+From then on, your changes show without rebuilding: Python code through
+CKAN's reloader, templates on the next page load. A clone added or
+removed needs `docker compose up -d`. Tests, translations and the FDF
+form schema: [development.md](development.md).
+
+## Day-to-day commands
 
 | Task | Command |
 |---|---|
 | Stop | `docker compose stop` |
 | Start again | `docker compose up -d` |
 | See CKAN's logs | `docker compose logs -f ckan` |
-| Rebuild after changing the Dockerfile, requirements or `.env` | `docker compose up -d --build` |
+| Apply a change to `.env` | `docker compose up -d` (a plain `restart` doesn't re-read `.env`) |
+| Get the latest extension releases from PyPI | `docker compose build --no-cache ckan && docker compose up -d` |
 | Remove everything, **including all data** | `docker compose down -v` |
-
-Code changes in `src_extensions/` are picked up without rebuilding:
-Python code by CKAN's reloader, templates on the next page load. See
-[development.md](development.md) for working on the extensions.
 
 ## Optional services
 
@@ -118,16 +157,13 @@ Python code by CKAN's reloader, templates on the next page load. See
 | Zenodo | Storing large files on Zenodo | A token from [sandbox.zenodo.org](https://sandbox.zenodo.org/) and a community; set `ZENODO_*` and add `zenodo audio_view video_view` to `CKAN_EXTRA_PLUGINS` |
 | Email | Password reset, notifications | An SMTP server; set `CKAN_EMAIL_SMTP_*` |
 
-After changing `.env`: `docker compose up -d` (a plain `restart` doesn't
-reload `.env`).
-
 ## When it doesn't start
 
 | Symptom | Cause / fix |
 |---|---|
 | `port is already allocated` | Another program uses 5000, 8085 or 5435: change `CKAN_PORT`, `NGINX_SSLPORT_HOST` or `CKAN_DB_PORT_EXT` in `.env` |
-| `ckan-app` restarts in a loop | `docker compose logs ckan` shows the failing step - usually a plugin listed in `CKAN_EXTRA_PLUGINS` whose repository isn't in `src_extensions/`, or a typo in `.env` |
-| "Plugin ... not found" | The extension isn't cloned in `src_extensions/`, or `FAIR3R_CONTEXT` isn't `DEV` |
-| CSV files show no data | `CKAN_BOOTSTRAP_SYSADMIN_*` not set (see step 3), then `docker compose up -d` |
+| `ckan-app` restarts in a loop | `docker compose logs ckan` shows the failing step - often a typo in `.env` or in `CKAN_EXTRA_PLUGINS` |
+| CSV files show no data | `CKAN_BOOTSTRAP_SYSADMIN_*` not set, then `docker compose up -d` |
 | Making a dataset public fails with a DataCite error | `doi` is enabled without a DataCite account - remove it from `CKAN_EXTRA_PLUGINS` |
+| My code changes don't show | `FAIR3R_CONTEXT=DEV` in `.env`, the clone in `src_extensions/`, then `docker compose up -d --build` |
 | Start over from scratch | `docker compose down -v`, then `docker compose up -d --build` |
