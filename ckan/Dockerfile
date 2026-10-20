@@ -45,8 +45,12 @@ RUN if command -v apt-get >/dev/null 2>&1; then \
       exit 1; \
     fi
 
-COPY requirements.txt dev-requirements.txt /srv/app/
+COPY requirements.txt dev-requirements.txt fair3r-extensions.txt /srv/app/
 RUN pip install --no-cache-dir --no-deps -r /srv/app/requirements.txt
+
+# FAIR3R extensions from PyPI (see fair3r-extensions.txt); a clone in
+# src_extensions/ replaces any of them in DEV.
+RUN pip install --no-cache-dir --no-deps -r /srv/app/fair3r-extensions.txt
 
 
 # WORKAROUND: CKAN 2.11+ build_js_translations() requires an i18n/ directory per enabled plugin; upstream sometimes omits it.

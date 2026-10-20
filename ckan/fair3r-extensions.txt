@@ -1,0 +1,14 @@
+# The FAIR3R extensions, from PyPI - installed in the image so the stack
+# runs without cloning anything. Latest releases, like the servers
+# (deploy/ansible/roles/ckan_extensions installs the same list); their own
+# dependencies are pinned in requirements.txt.
+#
+# In DEV, a clone of any of them in src_extensions/ is installed in
+# editable mode at startup and replaces the release (same distribution).
+# To pick up newer releases: docker compose build --no-cache ckan
+ckanext-fair3r
+ckanext-fair3r-doi
+ckanext-fair3r-pages
+ckanext-fair3r-plotly
+ckanext-citations
+ckanext-zenodo
