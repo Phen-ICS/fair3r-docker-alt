@@ -38,12 +38,11 @@
     virtualenv: "{{ ckan_venv }}"
     state: forcereinstall
     extra_args: "--no-cache-dir --no-deps"
-  loop:
-    - ckanext-fair3r
-    - ckanext-fair3r-pages
-    - ckanext-fair3r-doi
-    - ckanext-fair3r-plotly
-    - ckanext-citations
+  # ckanext-zenodo only where it's enabled (group_vars/all.yml).
+  loop: >-
+    {{ ['ckanext-fair3r', 'ckanext-fair3r-pages', 'ckanext-fair3r-doi',
+        'ckanext-fair3r-plotly', 'ckanext-citations']
+       + (['ckanext-zenodo'] if zenodo_enabled | bool else []) }}
   environment:
     PIP_PROGRESS_BAR: "off"
   changed_when: true

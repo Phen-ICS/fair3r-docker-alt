@@ -227,6 +227,22 @@
   changed_when: true
 
 # ---------------------------------------------------------------------------
+# ckanext-zenodo settings (mirror entrypoint.sh), only where it's enabled.
+# The token goes to the key matching the mode: the plugin reads
+# sandbox_access_token in test mode, access_token otherwise.
+# ---------------------------------------------------------------------------
+- name: Apply ckanext-zenodo config-tool settings
+  command: >-
+    {{ ckan_venv }}/bin/ckan config-tool {{ ckan_ini }} "{{ item }}"
+  loop:
+    - "ckanext.zenodo.test_mode = {{ zenodo_test_mode }}"
+    - "ckanext.zenodo.{{ 'sandbox_access_token' if zenodo_test_mode | bool else 'access_token' }} = {{ env_config.zenodo_access_token }}"
+    - "ckanext.zenodo.community_identifier = {{ env_config.zenodo_community_identifier }}"
+  when: zenodo_enabled | bool
+  no_log: true
+  changed_when: true
+
+# ---------------------------------------------------------------------------
 # Final DOI + pages + better_stats migrations (mirror entrypoint.sh).
 # ---------------------------------------------------------------------------
 - name: Upgrade DOI, pages and better_stats extension databases
@@ -241,6 +257,15 @@
     - pages
     - better_stats
     - citations
+
+- name: Upgrade ckanext-zenodo database
+  command: "{{ ckan_venv }}/bin/ckan --config={{ ckan_ini }} db upgrade -p zenodo"
+  become_user: "{{ ckan_os_user }}"
+  environment:
+    LANG: ""
+    LC_ALL: ""
+  changed_when: false
+  when: zenodo_enabled | bool
 
 
 # ---------------------------------------------------------------------------
@@ -275,3 +300,14 @@
     job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} citations refresh"
     user: "{{ ckan_os_user }}"
     state: present
+
+# Re-queue failed Zenodo publishes every 30 min (ckanext-zenodo) - CKAN's
+# worker runs without the rq scheduler, so a failed publish job is never
+# retried on its own. Removed where the plugin is off.
+- name: Create cron job for Zenodo publish retries
+  ansible.builtin.cron:
+    name: "Retry pending Zenodo publishes"
+    minute: "*/30"
+    job: "{{ ckan_venv }}/bin/ckan -c {{ ckan_ini }} zenodo retry-pending"
+    user: "{{ ckan_os_user }}"
+    state: "{{ 'present' if zenodo_enabled | bool else 'absent' }}"

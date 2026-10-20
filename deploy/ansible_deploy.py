@@ -36,6 +36,8 @@ CONTEXT_SCOPED = (
     "doi_account_name",
     "doi_account_password",
     "doi_prefix",
+    "zenodo_access_token",
+    "zenodo_community_identifier",
 )
 
 # Plain (non-context-prefixed) pass-through flags: same CLI value regardless
