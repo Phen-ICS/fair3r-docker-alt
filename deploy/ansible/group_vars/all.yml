@@ -53,7 +53,10 @@ ckan_datastore_test_db_name: "datastore_test"
 
 # Plugin list mirrors the dev envsubst result. Driven by CKAN_EXTRA_PLUGINS /
 # CKAN_EXTRA_VIEWS in dev; here we default to the same values used in dev.
-ckan_extra_plugins: "fair3r doi pages plotly_explorer citations"
+# pages before fair3r: CKAN gives the first-listed plugin's templates
+# priority, and fair3r's header.html replaces CKAN's instead of extending
+# it - listed after, pages' Pages/Blog links in the header never showed.
+ckan_extra_plugins: "pages fair3r doi plotly_explorer citations"
 ckan_extra_views: "plotly_explorer"
 
 # ckanext-zenodo: off unless a context switches it on in
