@@ -57,7 +57,7 @@ In order, on the target VM (roles in `deploy/ansible/roles/`):
 | `/etc/ckan/default/ckan.ini` from `ckan/config/ckan.ini.template` | `ckan_config` |
 | Database init or upgrade, DataStore permissions, administrator account, xloader token, extension settings and migrations, cron jobs | `ckan_bootstrap` |
 | systemd services `ckan-web` and `ckan-worker` | `ckan_services` |
-| nginx site from `deploy/nginx_<environment>.conf` | `nginx` |
+| nginx site from `deploy/nginx_<environment>.conf`: 20M body limit, 10G for `/zenodo/upload/` | `nginx` |
 | Check that CKAN answers and the services are running | `verification` |
 
 It's safe to run again: existing data is kept (`db upgrade`, not
@@ -121,10 +121,10 @@ variable per name, with GitLab's **environment scope** set to
 
 | File | Holds |
 |---|---|
-| `all.yml` | Defaults for every environment: CKAN version and package URL, plugin list, paths and ports, administrator name, `ckan_max_resource_size` (MB), `zenodo_enabled: false` |
+| `all.yml` | Defaults for every environment: CKAN version and package URL, plugin list, paths and ports, administrator name, `ckan_max_resource_size` (MB, 10 by default), `zenodo_enabled: false` |
 | `integration.yml` | DataCite test mode, Zenodo enabled on the sandbox |
 | `validation.yml` | DataCite test mode, 20 MB upload limit |
-| `production.yml` | Live DataCite, 100 MB upload limit, Zenodo set to zenodo.org (still disabled) |
+| `production.yml` | Live DataCite, 20 MB upload limit, Zenodo set to zenodo.org (still disabled) |
 
 To change one of these, edit the file, commit and deploy. To enable
 ckanext-zenodo on an environment: `zenodo_enabled: true` in its file,

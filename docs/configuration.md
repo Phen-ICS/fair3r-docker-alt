@@ -61,7 +61,7 @@ The test databases are created for the extensions' test suites.
 |---|---|---|
 | `CKAN_EXTRA_PLUGINS` | `fair3r pages plotly_explorer citations` | Plugins enabled on top of the base list (CKAN core views, DataStore, xloader, DCAT, OAI-PMH, statistics, contact...). Each one's database migration runs only if it's listed. The default needs no external account; add `doi` and `zenodo audio_view video_view` with their accounts (below). The servers enable `doi` too (`deploy/ansible/group_vars/all.yml`) |
 | `CKAN_EXTRA_VIEWS` | `plotly_explorer` | Views created automatically for new resources |
-| `CKAN_MAX_RESOURCE_SIZE` | `100` | Largest file stored in CKAN, in MB. With Zenodo enabled, larger files go to Zenodo |
+| `CKAN_MAX_RESOURCE_SIZE` | `20` | Largest file stored in CKAN, in MB. Keep it at or below nginx's limit (20M, `nginx/setup/nginx.conf`). With Zenodo enabled, larger files go to Zenodo, through nginx's own `/zenodo/upload/` route (10G) |
 
 The FAIR3R extensions' PyPI releases are built into the image
 (`ckan/fair3r-extensions.txt`). Optional private package registry, only
