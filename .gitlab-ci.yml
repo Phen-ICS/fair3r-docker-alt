@@ -104,7 +104,10 @@ security:pip-audit:
   script:
     - pip install --no-cache-dir pip-audit
     - grep -v '^-e ' ckan/requirements.txt > requirements-audited.txt
-    - pip-audit --disable-pip --no-deps -r requirements-audited.txt
+    # PYSEC-2026-3447 (setuptools < 83): sdists built on macOS file systems,
+    # not running CKAN - and setuptools 82+ drops pkg_resources, which
+    # ckanext-oaipmh still needs (see fix-python-advisories).
+    - pip-audit --disable-pip --no-deps -r requirements-audited.txt --ignore-vuln PYSEC-2026-3447
   tags:
     - ics-docker
 
