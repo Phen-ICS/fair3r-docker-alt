@@ -16,6 +16,16 @@
     virtualenv: "{{ ckan_venv }}"
     extra_args: "--no-deps"
 
+# The Fair3R extensions installed from PyPI - one list for the install and
+# for the version report below. ckanext-zenodo only where it's enabled
+# (group_vars/all.yml).
+- name: List the Fair3R CKAN extensions to install
+  ansible.builtin.set_fact:
+    fair3r_pypi_extensions: >-
+      {{ ['ckanext-fair3r', 'ckanext-fair3r-pages', 'ckanext-fair3r-doi',
+          'ckanext-fair3r-plotly', 'ckanext-citations']
+         + (['ckanext-zenodo'] if zenodo_enabled | bool else []) }}
+
 # Fair3R forks: published on public PyPI. When testing an in-flight MR
 # (extension_override_package/extension_override_wheel set by the CI
 # pipeline that fetched that MR's build:package artifact), that one
@@ -38,11 +48,7 @@
     virtualenv: "{{ ckan_venv }}"
     state: forcereinstall
     extra_args: "--no-cache-dir --no-deps"
-  # ckanext-zenodo only where it's enabled (group_vars/all.yml).
-  loop: >-
-    {{ ['ckanext-fair3r', 'ckanext-fair3r-pages', 'ckanext-fair3r-doi',
-        'ckanext-fair3r-plotly', 'ckanext-citations']
-       + (['ckanext-zenodo'] if zenodo_enabled | bool else []) }}
+  loop: "{{ fair3r_pypi_extensions }}"
   environment:
     PIP_PROGRESS_BAR: "off"
   changed_when: true
@@ -59,15 +65,11 @@
       - "{{ ckan_venv }}/bin/python"
       - -c
       - |
+        import sys
         from importlib.metadata import version
-        packages = [
-            "ckanext-fair3r",
-            "ckanext-fair3r-pages",
-            "ckanext-fair3r-doi",
-            "ckanext-fair3r-plotly",
-        ]
-        for package in packages:
+        for package in sys.argv[1].split():
             print(f"{package}=={version(package)}")
+      - "{{ fair3r_pypi_extensions | join(' ') }}"
   register: fair3r_extensions_versions
   changed_when: false
 
