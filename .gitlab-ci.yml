@@ -92,6 +92,22 @@ stages:
 # Lint stage: syntax-check the Ansible playbook.
 # --------------------------------------------------------------------------
 
+# Known vulnerabilities in the Python packages the servers install
+# (ckan/requirements.txt, all pinned: read as-is, nothing installed). The
+# `-e git+...` extensions have no PyPI version to check and are left out, as
+# is CKAN itself (the .deb). Not blocking yet: some pins have advisories
+# whose upgrades need testing on integration first.
+security:pip-audit:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
+  allow_failure: true
+  script:
+    - pip install --no-cache-dir pip-audit
+    - grep -v '^-e ' ckan/requirements.txt > requirements-audited.txt
+    - pip-audit --disable-pip --no-deps -r requirements-audited.txt
+  tags:
+    - ics-docker
+
 ansible_lint:
   stage: lint
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.10
