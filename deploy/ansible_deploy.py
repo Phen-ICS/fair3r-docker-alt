@@ -6,6 +6,9 @@ Mirrors the pattern used by /opt/ics-standalone-app-template/deploy/ansible_depl
   * receives every secret / per-context value as a CLI flag,
   * prefixes context-specific values with ``<context>_`` when forwarding them
     to Ansible (so the same playbook can be reused for every deploy context),
+  * forwards them in a private extra-vars file (``-e @file``), never on
+    ansible-playbook's command line: a failed run used to print that whole
+    command, and GitLab can't mask every secret (some characters prevent it),
   * installs the Galaxy collections listed in ansible/requirements.yml before
     running the playbook.
 """
@@ -13,13 +16,15 @@ Mirrors the pattern used by /opt/ics-standalone-app-template/deploy/ansible_depl
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+import tempfile
 
 
-# Per-context secrets. Each one is forwarded to ansible-playbook as
-# `-e <env>_<key>=<value>`, matching the ics-standalone-app-template pattern.
+# Per-context secrets. Each one is forwarded to ansible-playbook as the extra
+# var `<env>_<key>`, matching the ics-standalone-app-template pattern.
 #
 # doi_test_mode and fair3r_enable_fdf_integration aren't identifying, so they
 # still live in deploy/ansible/group_vars/<context>.yml / all.yml and are not
@@ -139,22 +144,34 @@ def main() -> int:
     if args.verbose:
         cmd.append("-" + "v" * min(args.verbose, 4))
 
-    for name in CONTEXT_SCOPED:
-        value = getattr(args, name)
-        if value is not None:
-            cmd.extend(["-e", f"{args.env}_{name}={value}"])
+    extra_vars = {
+        f"{args.env}_{name}": getattr(args, name)
+        for name in CONTEXT_SCOPED
+        if getattr(args, name) is not None
+    }
+    extra_vars.update(
+        {
+            name: getattr(args, name)
+            for name in PLAIN_PASSTHROUGH
+            if getattr(args, name) is not None
+        }
+    )
 
-    for name in PLAIN_PASSTHROUGH:
-        value = getattr(args, name)
-        if value is not None:
-            cmd.extend(["-e", f"{name}={value}"])
-
+    # mkstemp: readable by this user only (0600), removed whatever happens.
+    fd, vars_path = tempfile.mkstemp(prefix="fair3r-deploy-", suffix=".json")
     try:
-        subprocess.check_call(cmd)
-    except subprocess.CalledProcessError as exc:
-        print(f"ansible-playbook failed: {exc}", file=sys.stderr)
-        return exc.returncode or 1
+        with os.fdopen(fd, "w") as handle:
+            json.dump(extra_vars, handle)
+        cmd.extend(["-e", f"@{vars_path}"])
+        # Only the exit code on failure: the error would otherwise show the
+        # command, and everything ansible-playbook reports is above it.
+        returncode = subprocess.call(cmd)
+    finally:
+        os.remove(vars_path)
 
+    if returncode != 0:
+        print(f"ansible-playbook failed (exit code {returncode})", file=sys.stderr)
+        return returncode
     return 0
 
 
