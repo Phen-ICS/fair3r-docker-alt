@@ -123,8 +123,8 @@ variable per name, with GitLab's **environment scope** set to
 |---|---|
 | `all.yml` | Defaults for every environment: CKAN version and package URL, plugin list, paths and ports, administrator name, `ckan_max_resource_size` (MB, 10 by default), `zenodo_enabled: false` |
 | `integration.yml` | DataCite test mode, Zenodo enabled on the sandbox |
-| `validation.yml` | DataCite test mode, 20 MB upload limit |
-| `production.yml` | Live DataCite, 20 MB upload limit, Zenodo set to zenodo.org (still disabled) |
+| `validation.yml` | DataCite test mode, 20 MB upload limit, Zenodo enabled on the sandbox |
+| `production.yml` | Live DataCite, 20 MB upload limit, Zenodo enabled on zenodo.org |
 
 To change one of these, edit the file, commit and deploy. To enable
 ckanext-zenodo on an environment: `zenodo_enabled: true` in its file,

@@ -298,10 +298,9 @@ deploy_integration:
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
-    # ckanext-zenodo is only enabled on integration so far (see
-    # deploy/ansible/group_vars/integration.yml). ZENODO_COMMUNITY_IDENTIFIER
-    # isn't mapped here: one project variable, same slug on sandbox and
-    # zenodo.org (scope it per environment in GitLab if that ever changes).
+    # ZENODO_COMMUNITY_IDENTIFIER isn't mapped here: one project variable,
+    # same slug on sandbox and zenodo.org (scope it per environment in
+    # GitLab if that ever changes).
     ZENODO_ACCESS_TOKEN: $SANDBOX_ZENODO_ACCESS_TOKEN
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
     CKAN_EMAIL_SMTP_SERVER: $CKAN_EMAIL_SMTP_SERVER
@@ -441,7 +440,7 @@ deploy_validation:
     DOI_ACCOUNT_NAME: $SANDBOX_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $SANDBOX_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $SANDBOX_DOI_PREFIX
-    # Unused while zenodo_enabled is false in group_vars/validation.yml.
+    # Sandbox, like DataCite (group_vars/validation.yml).
     ZENODO_ACCESS_TOKEN: $SANDBOX_ZENODO_ACCESS_TOKEN
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
     CKAN_EMAIL_SMTP_SERVER: $CKAN_EMAIL_SMTP_SERVER
@@ -494,7 +493,6 @@ deploy_production:
     DOI_ACCOUNT_NAME: $PRODUCTION_DOI_ACCOUNT_NAME
     DOI_ACCOUNT_PASSWORD: $PRODUCTION_DOI_ACCOUNT_PASSWORD
     DOI_PREFIX: $PRODUCTION_DOI_PREFIX
-    # Unused while zenodo_enabled is false in group_vars/production.yml.
     # Protected variable: only reaches pipelines of protected branches.
     ZENODO_ACCESS_TOKEN: $PRODUCTION_ZENODO_ACCESS_TOKEN
     CKAN_EMAIL_SMTP_PASSWORD: $CKAN_EMAIL_SMTP_PASSWORD
