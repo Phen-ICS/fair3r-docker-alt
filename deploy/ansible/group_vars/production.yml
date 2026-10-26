@@ -15,7 +15,7 @@ ckan_max_resource_size: "20"
 doi_test_mode: "false"
 # Fair3R extension.
 fair3r_enable_fdf_integration: "true"
-# ckanext-zenodo stays off here (zenodo_enabled, group_vars/all.yml) until
-# the zenodo.org account and the security review are done - but when it's
-# switched on, it's the live zenodo.org, like doi_test_mode above.
+# ckanext-zenodo on the live zenodo.org, like doi_test_mode above. The
+# deploy stops if PRODUCTION_ZENODO_ACCESS_TOKEN is empty.
+zenodo_enabled: true
 zenodo_test_mode: "false"
