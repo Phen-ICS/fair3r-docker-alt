@@ -4,12 +4,12 @@ alembic==1.18.5
 async-timeout==5.0.1
 attrs==26.1.0
 Babel==2.18.0
-bleach==6.1.0
+bleach==6.4.0
 blinker==1.9.0
 boto3==1.43.23
 botocore==1.43.23
 cachelib==0.14.0
-certifi==2026.6.17
+certifi==2026.10.19
 cffi==2.0.0
 chardet==4.0.0
 charset-normalizer==3.4.9
@@ -30,8 +30,8 @@ frozendict==2.4.7
 ckantoolkit==0.0.7
 ckantools==0.5.0
 click==8.4.2
-coverage==6.5.0
-cryptography==46.0.3
+coverage==7.15.0
+cryptography==50.0.0
 datacite==1.4.0
 dnspython==2.8.0
 dominate==2.9.1
@@ -75,14 +75,14 @@ polib==1.2.0
 psycopg2==2.9.12
 pycparser==3.0
 pyIsEmail==2.0.1
-PyJWT==2.13.0
+PyJWT==2.15.1
 Pylons==1.0.3
 pyparsing==3.3.2
-pygments==2.18.0
+pygments==2.20.0
 pyrsistent==0.20.0
 pysolr==3.11.0
-pytest==7.4.4
-pytest-cov==4.1.0
+pytest==9.1.1
+pytest-cov==7.1.0
 pytest-factoryboy==2.8.1
 python-dateutil==2.9.0.post0
 python-magic==0.4.27
@@ -94,11 +94,15 @@ requests==2.34.2
 rpds-py==2026.5.1
 rq==2.10.0
 s3transfer==0.18.0
+# Not 82+: it drops pkg_resources, imported with no fallback by
+# ckanext-oaipmh, jsonschema 3.0.0 (datacite, so DOIs) and pytest-ckan
+# (integration tests). Its advisory PYSEC-2026-3447 (sdists on macOS file
+# systems) doesn't apply here; pip-audit ignores it (.gitlab-ci.yml).
 setuptools==81.0.0
 simplejson==4.1.1
 six==1.17.0
 SQLAlchemy==2.0.51
-sqlparse==0.5.4
+sqlparse==0.6.0
 tabulator==1.53.5
 tomli==2.4.1
 typing_extensions==4.16.0
@@ -106,12 +110,12 @@ tzdata==2025.2
 tzlocal==5.4.4
 unicodecsv==0.14.1
 Unidecode==1.4.0
-urllib3==2.7.0
+urllib3==2.8.0
 uWSGI==2.0.31
 watchdog==6.0.0
 webassets==3.0.0
 webencodings==0.5.1
-Werkzeug==3.1.8
+Werkzeug==3.1.9
 WTForms==3.2.2
 xlrd==2.0.2
 xmltodict==0.12.0
