@@ -96,8 +96,9 @@ rq==2.10.0
 s3transfer==0.18.0
 # Not 82+: it drops pkg_resources, imported with no fallback by
 # ckanext-oaipmh, jsonschema 3.0.0 (datacite, so DOIs) and pytest-ckan
-# (integration tests). Its advisory PYSEC-2026-3447 (sdists on macOS file
-# systems) doesn't apply here; pip-audit ignores it (.gitlab-ci.yml).
+# (integration tests). Its advisories PYSEC-2026-3447 (sdists on macOS file
+# systems) and GHSA-xmj3-9gf7-h52w (Windows paths, legacy wheels) don't apply
+# here; pip-audit ignores them (.gitlab-ci.yml).
 setuptools==81.0.0
 simplejson==4.1.1
 six==1.17.0

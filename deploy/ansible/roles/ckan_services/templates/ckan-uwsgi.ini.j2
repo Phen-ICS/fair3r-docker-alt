@@ -8,7 +8,15 @@ wsgi-file       = {{ ckan_config_dir }}/wsgi.py
 virtualenv      = {{ ckan_venv }}
 module          = wsgi:application
 master          = true
-pidfile         = /tmp/fair3r_ckan_uwsgi.pid
+# One process: the VMs have 1-2 GB of RAM, shared with Postgres, Solr and
+# Redis. Several threads: requests mostly wait on the database, Solr or the
+# network, so 4 threads serve 4 at once for almost no extra memory.
+# harakiri kills the whole process (all its threads) - long work belongs in
+# background jobs, not in a request.
+processes       = 1
+threads         = 4
+enable-threads  = true
+pidfile        = /tmp/fair3r_ckan_uwsgi.pid
 harakiri        = 50
 max-requests    = 5000
 vacuum          = true
