@@ -117,6 +117,11 @@ Full reference in
 
 Check the setup with `docker compose exec ckan ckan -c /srv/app/ckan.ini zenodo check`.
 
+`OPENALEX_API_KEY` (optional, ckanext-citations): a free key from
+https://openalex.org/settings/api. Without it, every caller behind the same
+IP shares one free OpenAlex budget ($0.10/day, about 1000 list requests);
+with it, the site has its own ($1/day).
+
 ### Email (SMTP)
 
 | Variable | Meaning |

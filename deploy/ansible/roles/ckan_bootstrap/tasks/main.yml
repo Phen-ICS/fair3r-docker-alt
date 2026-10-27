@@ -227,6 +227,17 @@
   changed_when: true
 
 # ---------------------------------------------------------------------------
+# ckanext-citations' OpenAlex API key (mirror entrypoint.sh), when CI has one.
+# ---------------------------------------------------------------------------
+- name: Apply ckanext-citations OpenAlex API key
+  command: >-
+    {{ ckan_venv }}/bin/ckan config-tool {{ ckan_ini }}
+    "ckanext.citations.openalex_api_key = {{ env_config.openalex_api_key }}"
+  when: env_config.openalex_api_key | length > 0
+  no_log: true
+  changed_when: true
+
+# ---------------------------------------------------------------------------
 # ckanext-zenodo settings (mirror entrypoint.sh), only where it's enabled.
 # The token goes to the key matching the mode: the plugin reads
 # sandbox_access_token in test mode, access_token otherwise.

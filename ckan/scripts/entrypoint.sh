@@ -393,6 +393,7 @@ upgrade_plugin_db pages
 ckan --config="$CKAN_INI" db upgrade -p better_stats
 
 upgrade_plugin_db citations
+[ -n "${OPENALEX_API_KEY:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.citations.openalex_api_key = ${OPENALEX_API_KEY:-}"
 
 echo "=== Set Zenodo Configuration ==="
 [ -n "${ZENODO_SANDBOX_ACCESS_TOKEN:-}" ] && ckan config-tool "$CKAN_INI" "ckanext.zenodo.sandbox_access_token = ${ZENODO_SANDBOX_ACCESS_TOKEN:-}"
