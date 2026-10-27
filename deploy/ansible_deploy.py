@@ -58,6 +58,7 @@ PLAIN_PASSTHROUGH = (
     "doi_publisher",
     "doi_site_title",
     "ckan_email_smtp_password",
+    "openalex_api_key",
     "ckan_email_smtp_server",
     "ckan_email_smtp_user",
     "ckan_email_smtp_mail_from",

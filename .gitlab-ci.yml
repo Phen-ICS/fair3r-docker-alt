@@ -58,6 +58,7 @@ stages:
         --doi-prefix "$DOI_PREFIX" \
         --zenodo-access-token "$ZENODO_ACCESS_TOKEN" \
         --zenodo-community-identifier "$ZENODO_COMMUNITY_IDENTIFIER" \
+        --openalex-api-key "$OPENALEX_API_KEY" \
         --ckan-email-smtp-password "$CKAN_EMAIL_SMTP_PASSWORD" \
         --ckan-site-url "$CKAN_SITE_URL" \
         --contact-mail "$CONTACT_MAIL" \

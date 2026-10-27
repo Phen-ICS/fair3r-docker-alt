@@ -71,6 +71,10 @@
           zenodo_access_token: "{{ lookup('vars', context + '_zenodo_access_token', default='') }}"
           zenodo_community_identifier: "{{ lookup('vars', context + '_zenodo_community_identifier', default='') }}"
 
+          # OpenAlex API key (ckanext-citations), one for every environment.
+          # Optional: without it, the IP's shared free budget is used.
+          openalex_api_key: "{{ openalex_api_key | default('') }}"
+
           # email SMTP settings. server/user/mail_from/reply_to identify the
           # organization, so (like the secrets above) they're passed as
           # plain -e vars by ansible_deploy.py rather than committed here;

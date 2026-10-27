@@ -114,6 +114,7 @@ variable per name, with GitLab's **environment scope** set to
 |---|---|
 | `CKAN_EMAIL_SMTP_SERVER`, `CKAN_EMAIL_SMTP_USER`, `CKAN_EMAIL_SMTP_PASSWORD`, `CKAN_EMAIL_SMTP_MAIL_FROM`, `CKAN_EMAIL_SMTP_REPLY_TO` | SMTP |
 | `CKAN_BOOTSTRAP_SYSADMIN_EMAIL` | Administrator's email |
+| `OPENALEX_API_KEY` | Optional OpenAlex key for ckanext-citations - masked, not protected (merge-request pipelines deploy integration). Without it, the server's IP shares OpenAlex's free daily budget |
 
 ## 4. Settings kept in the repository
 
